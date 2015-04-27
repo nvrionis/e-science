@@ -640,7 +640,7 @@ def main():
                               ' Default is HadoopImage (overrides image selection)',
                               nargs='?', metavar='hadoop_image_name', default=None,
                               const='Hadoop-2.5.2') 
-        parser_create.add_argument("replication_factor", help='Replication factor for HDFS)',
+        parser_create.add_argument("replication_factor", help='Replication factor for HDFS',
                               type=checker.positive_num_is)
         parser_create.add_argument("dfs_blocksize", help='Dfs_blocksize at HDFS',
                               type=checker.positive_num_is)      
