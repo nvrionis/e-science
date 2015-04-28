@@ -640,9 +640,9 @@ def main():
                               ' Default is HadoopImage (overrides image selection)',
                               nargs='?', metavar='hadoop_image_name', default=None,
                               const='Hadoop-2.5.2') 
-        parser_create.add_argument("replication_factor", help='Replication factor for HDFS',
+        parser_create.add_argument("replication_factor", help='Replication factor for HDFS. Must be between 1 and number of slave nodes (cluster_size -1)',
                               type=checker.positive_num_is)
-        parser_create.add_argument("dfs_blocksize", help='Dfs_blocksize at HDFS',
+        parser_create.add_argument("dfs_blocksize", help='Dfs_blocksize at HDFS in megabytes',
                               type=checker.positive_num_is)      
 
 
@@ -702,6 +702,12 @@ def main():
         c_userclusters = UserClusterInfo(opts)
         verb = argv[1]
         if verb == 'create':
+            if opts['cluster_size'] == 2:
+                if opts['replication_factor'] == 2:
+                    opts['replication_factor'] = 1
+            if opts['cluster_size'] <= opts['replication_factor']:
+                logging.error('Replication factor must be between 1 and number of slave nodes (cluster_size -1)')
+               exit(error_replication_factor)
             if opts['use_hadoop_image']:
                 opts['image'] = opts['use_hadoop_image']
             c_hadoopcluster.create()
