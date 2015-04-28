@@ -707,7 +707,7 @@ def main():
                     opts['replication_factor'] = 1
             if opts['cluster_size'] <= opts['replication_factor']:
                 logging.error('Replication factor must be between 1 and number of slave nodes (cluster_size -1)')
-               exit(error_replication_factor)
+                exit(error_replication_factor)
             if opts['use_hadoop_image']:
                 opts['image'] = opts['use_hadoop_image']
             c_hadoopcluster.create()
