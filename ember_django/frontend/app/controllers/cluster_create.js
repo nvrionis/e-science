@@ -680,7 +680,10 @@ App.ClusterCreateController = Ember.Controller.extend({
 	storage_buttons : function() {
 		var elements = document.getElementsByName("storage_button");
 		var length = elements.length;
-		if (length == 1) {elements[0].style.color = "white";}
+		if (length == 1) {
+			elements[0].style.color = "white";
+			this.set('disk_temp',elements[0].value);
+			}
 		else{
 			for (var i = 0; i < length; i++) {
 				elements[i].style.color = "initial";
