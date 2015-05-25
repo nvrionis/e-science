@@ -22,7 +22,7 @@ from cluster_errors_constants import error_ansible_playbook, REPORT, SUMMARY, NO
 playbook = 'site.yml'
 ansible_playbook = dirname(abspath(__file__)) + '/ansible/' + playbook
 ansible_hosts_prefix = 'ansible_hosts_'
-ansible_verbosity = ' -v'
+ansible_verbosity = ' -vvvv'
 
 
 def install_yarn(*args):
@@ -49,13 +49,14 @@ def install_yarn(*args):
                           master_IP=args[2])
         ansible_manage_cluster(cluster_id, 'format')
         ansible_manage_cluster(cluster_id, 'start')
+        ansible_manage_cluster(cluster_id, 'HDFSMkdir')
         if args[4] == 'hue':
             ansible_manage_cluster(cluster_id, 'HUEstart')
-        elif args[4] == 'cloudera':
-            ansible_manage_cluster(cluster_id, 'copyooziesharelib')
-            ansible_manage_cluster(cluster_id, 'CLOUDstart')
+        if args[4] == 'ecosystem':
+            ansible_manage_cluster(cluster_id, 'HUEstart')
+            ansible_manage_cluster(cluster_id, 'ECOSYSTEMstart')
     except Exception, e:
-        msg = 'Error while running Ansible %s' % e
+        msg = 'Error while running Ansible '
         raise RuntimeError(msg, error_ansible_playbook)
     finally:
         os.system('rm /tmp/master_' + master_hostname + '_pub_key_* ')
@@ -80,7 +81,7 @@ def create_ansible_hosts(cluster_name, list_of_hosts, hostname_master):
     slaves_host = '[slaves]'
     cluster_id = cluster_name.rsplit('-',1)[1]
     cluster = ClusterInfo.objects.get(id=cluster_id)
-    if 'cdh' in cluster.os_image.lower():
+    if 'cloudera' in cluster.os_image.lower():
         master_host = '[master_cloud]'
         slaves_host = '[slaves_cloud]'
 
@@ -107,7 +108,7 @@ def ansible_manage_cluster(cluster_id, action):
     cluster = ClusterInfo.objects.get(id=cluster_id)
     pre_action_status = cluster.hadoop_status
     role = 'yarn'
-    if 'cdh' in cluster.os_image.lower():
+    if 'cloudera' in cluster.os_image.lower():
         role = 'cloudera'
     if action in NON_STATE_HADOOP_ACTIONS:
         current_hadoop_status = REVERSE_HADOOP_STATUS[cluster.hadoop_status]
@@ -124,20 +125,34 @@ def ansible_manage_cluster(cluster_id, action):
         if action == "format" and pre_action_status == const_hadoop_status_started:
             # format request for started cluster > stop [> clean ]> format > start
             # stop
-            for hadoop_action in ['stop', action, 'start']:
-               ansible_code = '{0} {1}'.format(ansible_code_generic, hadoop_action)
-               execute_ansible_playbook(ansible_code)
-
-            msg = ' Cluster %s %s' %(cluster.cluster_name, HADOOP_STATUS_ACTIONS[action][2])
-            db_hadoop_update(cluster_id, current_hadoop_status, msg)
-            return msg
-
+            ansible_code = '{0} {1}'.format(ansible_code_generic, 'stop')
+            ansible_exit_status = execute_ansible_playbook(ansible_code)
+            if ansible_exit_status == 0:
+                # TODO: shall we also update the db status with a message for each intermediate step?
+                # clean + format
+                ansible_code = '{0} {1}'.format(ansible_code_generic, action)
+                ansible_exit_status = execute_ansible_playbook(ansible_code)
+                if ansible_exit_status == 0:
+                    # re-start to return to initial status
+                    ansible_code = '{0} {1}'.format(ansible_code_generic, 'start')
+                    ansible_exit_status = execute_ansible_playbook(ansible_code)
+                    if ansible_exit_status == 0:
+                        msg = ' Cluster %s %s' %(cluster.cluster_name, HADOOP_STATUS_ACTIONS[action][2])
+                        db_hadoop_update(cluster_id, current_hadoop_status, msg)
+                        return msg
+                    db_hadoop_update(cluster_id, current_hadoop_status, 'Error in Hadoop action') # re-start failed
+                db_hadoop_update(cluster_id, current_hadoop_status, 'Error in Hadoop action') # format failed
+            db_hadoop_update(cluster_id, current_hadoop_status, 'Error in Hadoop action') # stop failed
         else: # other actions including format request when hadoop is stopped
             ansible_code = '{0} {1}'.format(ansible_code_generic, action)
-            execute_ansible_playbook(ansible_code)
-            msg = ' Cluster %s %s' %(cluster.cluster_name, HADOOP_STATUS_ACTIONS[action][2])
-            db_hadoop_update(cluster_id, current_hadoop_status, msg)
-            return msg
+            ansible_exit_status = execute_ansible_playbook(ansible_code)
+    
+            if ansible_exit_status == 0:
+                msg = ' Cluster %s %s' %(cluster.cluster_name, HADOOP_STATUS_ACTIONS[action][2])
+                db_hadoop_update(cluster_id, current_hadoop_status, msg)
+                return msg
+
+        db_hadoop_update(cluster_id, current_hadoop_status, 'Error in Hadoop action')
 
     else:
         msg = ' Ansible hosts file [%s] does not exist' % hosts_filename
@@ -158,7 +173,6 @@ def ansible_create_cluster(hosts_filename, cluster_size, hadoop_image, ssh_file,
                         'slave nodes')
     level = logging.getLogger().getEffectiveLevel()
     role = 'yarn'
-    tags = '-t preconfig,postconfig'
     if hadoop_image == 'hue':
         # Hue -> use an available image (Hadoop and Hue pre-installed)
         tags = '-t postconfig,hueconfig'
@@ -167,6 +181,12 @@ def ansible_create_cluster(hosts_filename, cluster_size, hadoop_image, ssh_file,
         tags = '-t postconfig'
     elif hadoop_image == 'cloudera':
         role = 'cloudera'
+        tags = '-t postconfig'
+    elif hadoop_image == 'ecosystem':
+        # Ecosystem -> use an available image (Hadoop, Hue, Hive, Oozie, HBase, Pig, Spark pre-installed)
+        tags = '-t postconfig,hueconfig,ecoconfig'
+    else:
+        tags = '-t preconfig,postconfig'
     # Create debug file for ansible
     debug_file_name = "create_cluster_debug_" + hosts_filename.split(ansible_hosts_prefix, 1)[1] + ".log"
     ansible_log = " >> " + os.path.join(os.getcwd(), debug_file_name)
@@ -176,7 +196,6 @@ def ansible_create_cluster(hosts_filename, cluster_size, hadoop_image, ssh_file,
     ansible_code = 'ansible-playbook -i {0} {1} {2} '.format(hosts_filename, ansible_playbook, ansible_verbosity) + \
     '-f {0} -e "choose_role={1} ssh_file_name={2} token={3} '.format(str(cluster_size), role, ssh_file, token) + \
     'dfs_blocksize={0}m dfs_replication={1} uuid={2} " {3}'.format(dfs_blocksize, replication_factor, uuid, tags)
-
 
     # Execute ansible
     ansible_code += ansible_log
