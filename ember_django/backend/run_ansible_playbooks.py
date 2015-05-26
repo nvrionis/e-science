@@ -22,13 +22,13 @@ from cluster_errors_constants import error_ansible_playbook, REPORT, SUMMARY, NO
 playbook = 'site.yml'
 ansible_playbook = dirname(abspath(__file__)) + '/ansible/' + playbook
 ansible_hosts_prefix = 'ansible_hosts_'
-ansible_verbosity = ' -vvvv'
+ansible_verbosity = ' -v'
 
 
 def install_yarn(*args):
     """
     Calls ansible playbook for the installation of yarn and all
-    required dependencies. Also  formats and starts yarn.
+    required dependencies. Also  formats and starts yarn or cloudera hadoop distribution.
     Takes positional arguments as args tuple.
     args: token, hosts_list, master_ip, cluster_name, hadoop_image, ssh_file, replication_factor, dfs_blocksize
     """

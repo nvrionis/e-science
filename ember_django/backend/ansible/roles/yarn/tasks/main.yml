@@ -164,11 +164,23 @@
       - { dest: '/home/hduser/.bashrc', state: 'present', insertafter: 'EOF', line: "'export YARN_HOME=$HADOOP_INSTALL'" }
       - { dest: '/home/hduser/.bashrc', state: 'present', insertafter: 'EOF', line: "'export HADOOP_OPTS=-Djava.net.preferIPv4Stack=true'" }
       - { dest: '/home/hduser/.bashrc', state: 'present', insertafter: 'EOF', line: "'export HADOOP_CONF_DIR=$HADOOP_INSTALL/etc/hadoop'" }
-      - { dest: '/home/hduser/.bashrc', state: 'present', insertafter: 'EOF', line: "'export HIVE_HOME=/usr/local/hive'" }
-      - { dest: '/home/hduser/.bashrc', state: 'present', insertafter: 'EOF', line: "'export PATH=$HIVE_HOME/bin:$PATH'" }
-      - { dest: '/home/hduser/.bashrc', state: 'present', insertafter: 'EOF', line: "'export PATH=/home/hduser/pig-0.14.0/bin/:$PATH'" }
       - { dest: '/usr/local/hadoop/etc/hadoop/hadoop-env.sh', state: 'present', insertafter: 'EOF', line: '"export JAVA_HOME=/usr/lib/jvm/java-8-oracle"' }
       - { dest: '/usr/local/hadoop/etc/hadoop/hadoop-env.sh', state: 'present', insertafter: 'EOF', line: '"export HADOOP_PREFIX=/usr/local/hadoop"' }
+ 
+  - name: update ~/.bashrc
+    tags: ECOSYSTEMstart
+    lineinfile: "dest={{item.dest}} state={{item.state}} insertafter={{item.insertafter}} line={{item.line}}"
+    with_items:
+      - { dest: '/home/hduser/.bashrc', state: 'present', insertafter: 'EOF', line: "'export PATH=$PATH:$SPARK_HOME/bin'" }
+
+  - name: update ~/.bashrc and hbase-env.sh files for ecosystem
+    tags: ecoconfig
+    lineinfile: "dest={{item.dest}} state={{item.state}} insertafter={{item.insertafter}} line={{item.line}}"
+    with_items:
+      - { dest: '/home/hduser/.bashrc', state: 'present', insertafter: 'EOF', line: "'export HIVE_HOME=/usr/local/hive'" }
+      - { dest: '/home/hduser/.bashrc', state: 'present', insertafter: 'EOF', line: "'export PATH=$HIVE_HOME/bin:$PATH'" }
+      - { dest: '/home/hduser/.bashrc', state: 'present', insertafter: 'EOF', line: "'export PATH=/usr/local/pig/bin/:$PATH'" }
+      - { dest: '/usr/local/hbase/conf/hbase-env.sh', state: 'present', insertafter: 'EOF', line: '"export JAVA_HOME=/usr/lib/jvm/java-8-oracle/"' }
 
   - name: Copy Java lib directory
     tags: postconfig
@@ -193,7 +205,7 @@
   - name: copy yarn configuration xml and kamakirc files in every node
     tags: postconfig
     template: "src={{item.src}} dest={{item.dest}} owner={{item.owner}} group={{item.group}}"
-    with_items: 
+    with_items:
       - { src: 'core-site.j2', dest: '/usr/local/hadoop/etc/hadoop/core-site.xml', owner: 'hduser', group: 'hadoop' }
       - { src: 'mapred-site.j2', dest: '/usr/local/hadoop/etc/hadoop/mapred-site.xml', owner: 'hduser', group: 'hadoop' }
       - { src: 'hdfs-site.j2', dest: '/usr/local/hadoop/etc/hadoop/hdfs-site.xml', owner: 'hduser', group: 'hadoop' }
@@ -205,13 +217,32 @@
     template: src=hue.j2 dest={{ hue_home }}/desktop/conf/hue.ini owner=hduser group=hadoop
     when: is_master
 
+  - name: copy ecosystem xml files
+    tags: ecoconfig
+    template: "src={{item.src}} dest={{item.dest}} owner={{item.owner}} group={{item.group}}"
+    with_items:
+      - { src: 'regionservers.j2', dest: '/usr/local/hbase/conf/regionservers', owner: 'hduser', group: 'hadoop' }
+      - { src: 'hbase-site.j2', dest: '/usr/local/hbase/conf/hbase-site.xml', owner: 'hduser', group: 'hadoop' }
+      - { src: 'hive-site.j2', dest: '/usr/local/hive/conf/hive-site.xml', owner: 'hduser', group: 'hadoop' }
+
   - name: create masters and slaves files in hadoop-yarn master node
     tags: postconfig
     template: "src={{item.src}} dest={{item.dest}} owner={{item.owner}} group={{item.group}}"
-    with_items: 
+    with_items:
       - { src: 'masters.j2', dest: '/usr/local/hadoop/etc/hadoop/masters', owner: 'hduser', group: 'hadoop' }
       - { src: 'slaves.j2', dest: '/usr/local/hadoop/etc/hadoop/slaves', owner: 'hduser', group: 'hadoop' }
     when: is_master
+    
+  - name: create masters and slaves files in spark master node
+    tags: ECOSYSTEMstart
+    template: "src={{item.src}} dest={{item.dest}} owner={{item.owner}} group={{item.group}}"
+    with_items: 
+      - { src: 'slaves.j2', dest: '/usr/local/spark/conf/slaves', owner: 'hduser', group: 'hadoop' }
+    when: is_master 
+    
+  - name: Copy Livy server shell script
+    tags: postconfig
+    copy: src=hue_livy.sh dest=/etc/init.d/livy-server mode=0755
 
   - name: create app/hadoop/tmp/namenode and datanode
     tags: postconfig
@@ -275,10 +306,18 @@
     tags: hueconfig
     when: is_master
 
-  - name: Change own to hduser
+  - name: Create folder zookeeper
     tags: ecoconfig
-    file: path={{hive_home}} owner={{eco_db_user}} group=hadoop recurse=yes state=directory
-    when: is_master
+    file: path=/usr/local/zookeeper owner={{eco_db_user}} group=hadoop state=directory
+
+  - name: Change ownership to hduser for all components
+    tags: ecoconfig
+    file: path={{item.path}} owner={{item.owner}} group={{item.group}} recurse=yes state=directory
+    with_items:
+      - { path: '{{hive_home}}', owner: '{{eco_db_user}}', group: 'hadoop' }
+      - { path: '/usr/local/hbase/', owner: '{{eco_db_user}}', group: 'hadoop' }
+      - { path: '/usr/local/oozie/', owner: '{{eco_db_user}}', group: 'hadoop' }
+      - { path: '/usr/local/pig/', owner: '{{eco_db_user}}', group: 'hadoop' }
 
   - name: Create PostgreSql database for Hive
     tags: ecoconfig
@@ -293,7 +332,17 @@
       - "{{hive_home}}/metastore/scripts/upgrade/postgres/hive-txn-schema-0.13.0.postgres.sql"
     when: is_master
 
-  - name: Copy xml files to oozie conf directory
+  - name: Copy hadoop xml files to oozie conf directory
     tags: ecoconfig
     shell: cp -rf {{hadoop_home}}/etc/hadoop/* {{path_to_hadoop}}/oozie/conf/hadoop-conf
+    when: is_master
+
+  - name: Create Oozie Database
+    tags: ECOSYSTEMstart
+    action: command sudo -u hduser ./ooziedb.sh create -sqlfile oozie.sql -run chdir=/usr/local/oozie/bin/
+    when: is_master
+
+  - name: Create Sharelib Directory on HDFS
+    tags: ECOSYSTEMstart
+    action: command sudo -u hduser /usr/local/oozie/bin/./oozie-setup.sh sharelib create -fs hdfs://{{ hostvars[groups['master'][0]].inventory_hostname_short}}:9000 chdir={{hadoop_home}}/bin
     when: is_master
