@@ -234,7 +234,7 @@
     when: is_master
     
   - name: create masters and slaves files in spark master node
-    tags: ECOSYSTEMstart
+    tags: ecoconfig
     template: "src={{item.src}} dest={{item.dest}} owner={{item.owner}} group={{item.group}}"
     with_items: 
       - { src: 'slaves.j2', dest: '/usr/local/spark/conf/slaves', owner: 'hduser', group: 'hadoop' }
