@@ -347,5 +347,5 @@
 
   - name: Create Livy server shell script
     tags: ecoconfig
-    shell: printf "#! bin/bash\ncd /usr/local/hue/build/env/bin\nsudo -u hduser ./hue livy_server &" > livyserver;chmod 755 /etc/init.d/livyserver chdir=/etc/init.d/
+    shell: printf "#! bin/bash\nexport PATH=$PATH:$SPARK_HOME/bin\ncd /usr/local/hue/build/env/bin\nsudo -u hduser ./hue livy_server &" > livyserver;chmod 755 /etc/init.d/livyserver chdir=/etc/init.d/
     when: is_master
