@@ -39,14 +39,11 @@ def install_yarn(*args):
     cluster_id = args[3].rsplit('-', 1)[1]
     # Create ansible_hosts file
     try:
-        hosts_filename = create_ansible_hosts(args[3], list_of_hosts,
-                                         args[2])
+        hosts_filename = create_ansible_hosts(args[3], list_of_hosts, args[2])
         # Run Ansible playbook
         ansible_create_cluster(hosts_filename, cluster_size, args[4], args[5], args[0], args[6], args[7])
         # Format and start Hadoop cluster
-        set_cluster_state(args[0], cluster_id,
-                          ' Yarn Cluster is active', status='Active',
-                          master_IP=args[2])
+        set_cluster_state(args[0], cluster_id, ' Yarn Cluster is active', status='Active', master_IP=args[2])
         ansible_manage_cluster(cluster_id, 'format')
         ansible_manage_cluster(cluster_id, 'start')
         ansible_manage_cluster(cluster_id, 'HDFSMkdir')
@@ -55,7 +52,7 @@ def install_yarn(*args):
         if args[4] == 'ecosystem':
             ansible_manage_cluster(cluster_id, 'ECOSYSTEMstart')
             ansible_manage_cluster(cluster_id, 'HUEstart')
-		elif args[4] == 'cloudera':
+        elif args[4] == 'cloudera':
             ansible_manage_cluster(cluster_id, 'copyooziesharelib')
             ansible_manage_cluster(cluster_id, 'CLOUDstart')
     except Exception, e:
