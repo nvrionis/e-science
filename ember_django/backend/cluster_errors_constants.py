@@ -85,7 +85,7 @@ HADOOP_STATUS_ACTIONS = {"stop": ["0","Stopping","stopped"],
                          "ECOSYSTEMstart": ["5", "Starting Ecosystem", "Started Ecosystem"],
 						 "HUEstart": ["3", "Starting Hue", "Started Hue"],
                          "CLOUDstart": ["4", "Starting Cloudera Components", "Started Cloudera Components"],
-                         "copyooziesharelib": ["5", "Copying Oozie share library", "Copyied Oozie share library"]} }
+                         "copyooziesharelib": ["5", "Copying Oozie share library", "Copyied Oozie share library"]} 
 
 REVERSE_HADOOP_STATUS = {"0":"stop", "1":"start", "2":"Pending"}
 
