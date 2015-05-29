@@ -177,6 +177,7 @@
       - { dest: '/home/hduser/.bashrc', state: 'present', insertafter: 'EOF', line: "'export HBASE_HOME=/usr/local/hbase'" }
       - { dest: '/home/hduser/.bashrc', state: 'present', insertafter: 'EOF', line: "'export PATH=$PATH:$HBASE_HOME/bin'" }
       - { dest: '/home/hduser/.bashrc', state: 'present', insertafter: 'EOF', line: "'export PATH=$PATH:$SPARK_HOME/bin'" }
+      - { dest: '.bashrc', state: 'present', insertafter: 'EOF', line: "'export PATH=$PATH:$SPARK_HOME/bin'" }
       - { dest: '/usr/local/hbase/conf/hbase-env.sh', state: 'present', insertafter: 'EOF', line: '"export JAVA_HOME=/usr/lib/jvm/java-8-oracle/"' }
 
   - name: Copy Java lib directory
@@ -347,5 +348,5 @@
 
   - name: Create Livy server shell script
     tags: ecoconfig
-    shell: printf "#! bin/bash\nexport PATH=$PATH:$SPARK_HOME/bin\ncd /usr/local/hue/build/env/bin\nsudo -u hduser ./hue livy_server &" > livyserver;chmod 755 /etc/init.d/livyserver chdir=/etc/init.d/
+    shell: printf "#! bin/bashs\ncd /usr/local/hue/build/env/bin\n ./hue livy_server &" > livyserver;chmod 755 /etc/init.d/livyserver chdir=/etc/init.d/
     when: is_master
