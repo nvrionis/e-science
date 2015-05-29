@@ -83,11 +83,10 @@ HADOOP_STATUS_ACTIONS = {"stop": ["0","Stopping","stopped"],
                          "HDFSMkdir": ["3", "Creating /user/hduser in HDFS", "Created /user/hduser"],
                          "HUEstart": ["4", "Starting Hue", "Started Hue"],
                          "ECOSYSTEMstart": ["5", "Starting Ecosystem", "Started Ecosystem"],
-						 "HUEstart": ["3", "Starting Hue", "Started Hue"],
                          "CLOUDstart": ["4", "Starting Cloudera Components", "Started Cloudera Components"],
                          "copyooziesharelib": ["5", "Copying Oozie share library", "Copyied Oozie share library"]} 
 
 REVERSE_HADOOP_STATUS = {"0":"stop", "1":"start", "2":"Pending"}
 
 # List of Hadoop actions that do not update the  state field in database
-NON_STATE_HADOOP_ACTIONS = ['format','HDFSMkdir','HUEstart','ECOSYSTEMstart','HUEstart','copyooziesharelib','CLOUDstart']
+NON_STATE_HADOOP_ACTIONS = ['format','HDFSMkdir','HUEstart','ECOSYSTEMstart','copyooziesharelib','CLOUDstart']
