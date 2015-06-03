@@ -11,14 +11,13 @@ import unittest
 sys.path.append(dirname(abspath(__file__)))
 from constants_of_tests import *
 from orka.orka.cluster_errors_constants import error_fatal, const_hadoop_status_started, FNULL
-import requests
 
 BASE_DIR = join(dirname(abspath(__file__)), "../")
 
 
-class ClouderaTest(unittest.TestCase):
+class EcosystemTest(unittest.TestCase):
     """
-    A Test suite for testing Cloudera components
+    A Test suite for testing Ecosystem components
     """
     def setUp(self):
         """
@@ -26,7 +25,7 @@ class ClouderaTest(unittest.TestCase):
         """
         parser = RawConfigParser()
         config_file = join(BASE_DIR, '.private/.config.txt')
-        self.name = 'clouderatest'
+        self.name = 'ecosystemtest'
         parser.read(config_file)
         try:
             self.token = parser.get('cloud \"~okeanos\"', 'token')
@@ -40,11 +39,11 @@ class ClouderaTest(unittest.TestCase):
                 if cluster['master_IP'] == self.master_IP:
                     if cluster['hadoop_status'] == const_hadoop_status_started:
                         self.active_cluster = cluster
-                        self.wordcount_command = CLOUDERA_WORDCOUNT
-                        self.hadoop_path = CLOUDERA_HADOOP_PATH
-                        self.user = 'root'
-                        self.VALID_DEST_DIR = '/user/hdfs'
-                        self.hdfs_path = CLOUDERA_HDFS_PATH
+                        self.wordcount_command = WORDCOUNT
+                        self.hadoop_path = HADOOP_PATH
+                        self.user = 'hduser'
+                        self.VALID_DEST_DIR = '/user/hduser'
+                        self.hdfs_path = HDFS_PATH
                         break
             else:
                 logging.error(' You can take file actions on active clusters with started hadoop only.')
@@ -58,106 +57,32 @@ class ClouderaTest(unittest.TestCase):
             self.project_name = "INVALID_PROJECT_NAME"
             print 'Current authentication details are kept off source control. ' \
                   '\nUpdate your .config.txt file in <projectroot>/.private/'
-
-    def test_oozie_status_normal(self):
+                  
+                  
+    def test_pig(self):
         """
-        Functional test for Cloudera Oozie
-        checks if status is normal
+        Test pig for hadoop ecosystem
         """
-        # ensure that oozie is running
-        response = subprocess.call( "ssh " + self.user + "@" + self.master_IP + " \"" + 
-                                    "service oozie restart" + "\""
-                                    , stderr=FNULL, shell=True)                
-        response = subprocess.call( "ssh " + self.user + "@" + self.master_IP + " \"" + 
-                                    "oozie admin -status -oozie http://" + self.master_IP + ":11000/oozie" + "\""
-                                    , stderr=FNULL, shell=True)        
-        self.assertEqual(response, 0) # NORMAL
-
-    def test_oozie_status_down(self):
-        """
-        Functional test for Cloudera Oozie
-        checks if oozie is down
-        """
-        # stop oozie
-        response = subprocess.call( "ssh " + self.user + "@" + self.master_IP + " \"" + 
-                                    "service oozie stop" + "\""
-                                    , stderr=FNULL, shell=True)                
-        response = subprocess.call( "ssh " + self.user + "@" + self.master_IP + " \"" + 
-                                    "oozie admin -status -oozie http://" + self.master_IP + ":11000/oozie" + "\""
-                                    , stderr=FNULL, shell=True)        
-        self.assertEqual(response, 255) # Oozie down
+        pig_command = "export JAVA_HOME=/usr/lib/jvm/java-8-oracle; export HADOOP_HOME=/usr/local/hadoop; /usr/local/pig/bin/pig -e \"fs -mkdir /tmp/pig_test_folder\""
+        ssh_call_hadoop(self.user, self.master_IP, pig_command, hadoop_path='')
+        exist_check_status = ssh_call_hadoop(self.user, self.master_IP,
+                                             ' dfs -test -e /tmp/{0}'.format('pig_test_folder'))
+        self.assertEqual(exist_check_status, 0)
+        self.addCleanup(self.delete_hdfs_files, '/tmp/pig_test_folder', prefix="-r")
         
-    def test_hive_count_rows_in_table_exists(self):
-        """
-        Functional test for Cloudera Hive
-        creates a table (if not exists)
-        and counts rows in this table 
-        """
-        # create a table
-        response = subprocess.call( "ssh " + self.user + "@" + self.master_IP + " \"" + 
-                                    "hive -e 'CREATE TABLE IF NOT EXISTS hive_table ( age int, name String );'" + "\""
-                                    , stderr=FNULL, shell=True)
-        # count rows
-        response = subprocess.call( "ssh " + self.user + "@" + self.master_IP + " \"" + 
-                                    "hive -e 'select count(*) from hive_table';" + "\""
-                                    , stderr=FNULL, shell=True)
-        self.assertEqual(response, 0) # OK
-
-    def test_hive_count_rows_in_table_not_exists(self):
-        """
-        Functional test for Cloudera Hive
-        count rows in a table that does not exist 
-        """
-        response = subprocess.call( "ssh " + self.user + "@" + self.master_IP + " \"" + 
-                                    "hive -e 'select count(*) from table_not_exists';" + "\""
-                                    , stderr=FNULL, shell=True)
-        self.assertEqual(response, 17) # ERROR table not found
-
-    def test_hbase_table_not_exists(self):
-        """
-        Functional test for Cloudera HBase
-        check if a table does not exist
-        """
-        baseurl = "http://" + self.master_IP + ":60050"
-        # check for a table that does not exist
-        request = requests.get(baseurl + "/" + "table_not_exists" + "/schema")
-        self.assertEqual(request.status_code, 404) # NOT FOUND
-
-    def test_hbase_table_exists(self):
-        """
-        Functional test for Cloudera HBase
-        create a table and then
-        check if the table exists
-        """
-        baseurl = "http://" + self.master_IP + ":60050"                
-        tablename = "testtable"
-        cfname = "testcolumn1"
-        # delete it first (if already exists)
-        request = requests.delete(baseurl + "/" + tablename + "/schema")        
-        # Create XML for table
-        content =  '<?xml version="1.0" encoding="UTF-8"?>'
-        content += '<TableSchema name="' + tablename + '">'
-        content += '  <ColumnSchema name="' + cfname + '" />'
-        content += '</TableSchema>'
-        # Create the table
-        request = requests.post(baseurl + "/" + tablename + "/schema", 
-                                data=content, headers={"Content-Type" : "text/xml", "Accept" : "text/xml"})       
-        self.assertEqual(request.status_code, 201) # CREATED
-        # Check if table exists
-        request = requests.get(baseurl + "/" + tablename + "/schema")   
-        self.assertEqual(request.status_code, 200) # OK
-
+        
     def test_spark_pi_wordcount(self):
         """
-        Functional test to check if Spark is working correctly in a Cloudera cluster
+        Functional test to check if Spark is working correctly in a Ecosystem cluster
         by running a Spark Pi and a Spark WordCount.
         """
         self.put_file_to_hdfs('/tmp/{0}'.format(SOURCE_HDFS_TO_PITHOS_FILE))
-        spark_job = 'sudo -u hdfs spark-submit --class org.apache.spark.examples.'
+        spark_job = 'export HADOOP_CONF_DIR=/usr/local/hadoop/etc/hadoop; /usr/local/spark/bin/spark-submit --class org.apache.spark.examples.'
 
         for job_properties in [('SparkPi', 10), ('JavaWordCount', SOURCE_HDFS_TO_PITHOS_FILE)]:
-            test_job = spark_job + '{0} --deploy-mode cluster --master yarn-cluster {1} {2}'.format(job_properties[0], SPARK_EXAMPLES, job_properties[1])
-            ssh_call_hadoop(self.user, self.master_IP, test_job, hadoop_path='')
+            test_job = spark_job + '{0} --deploy-mode cluster --master yarn-cluster {1} {2}'.format(job_properties[0], SPARK_ECOSYSTEM_EXAMPLES, job_properties[1])
+            exist_check_status = ssh_call_hadoop(self.user, self.master_IP, test_job, hadoop_path='')
+            self.assertEqual(exist_check_status, 0)
 
         self.addCleanup(self.delete_hdfs_files, SOURCE_HDFS_TO_PITHOS_FILE)
         self.addCleanup(self.hadoop_local_fs_action, 'rm /tmp/{0}'.format(SOURCE_HDFS_TO_PITHOS_FILE))
@@ -165,7 +90,7 @@ class ClouderaTest(unittest.TestCase):
     def test_compare_mapreduce_wordcount_pithos_hdfs(self):
         """
         Functional test to upload a test file in Pithos and run two MapReduce wordcounts
-        in a Cloudera cluster, one from Pithos and one native from HDFS and compare the
+        in a Ecosystem cluster, one from Pithos and one native from HDFS and compare the
         length of the output files.
         """
         subprocess.call('echo "this is a test file to run a wordcount" > {0}'.format(SOURCE_PITHOS_TO_HDFS_FILE),
@@ -199,15 +124,48 @@ class ClouderaTest(unittest.TestCase):
         self.addCleanup(self.delete_local_files, SOURCE_PITHOS_TO_HDFS_FILE)
         self.addCleanup(self.delete_pithos_files, SOURCE_PITHOS_TO_HDFS_FILE)
         self.addCleanup(self.hadoop_local_fs_action, 'rm /tmp/{0}'.format(SOURCE_PITHOS_TO_HDFS_FILE))
+    
+    def test_hive_count_rows_in_table_exists(self):
+        """
+        Functional test for Ecosystem Hive
+        creates a table (if not exists)
+        and counts rows in this table 
+        """
+        # create a table
+        hive_command = "hive -e 'CREATE TABLE IF NOT EXISTS hive_table ( age int, name String );'"
+        ssh_call_hadoop(self.user, self.master_IP, hive_command, hadoop_path='/usr/local/hive/bin/')
+        
+        # count rows
+        hive_command_count = "hive -e 'select count(*) from hive_table';"
+        exist_check_status = ssh_call_hadoop(self.user, self.master_IP, hive_command_count, hadoop_path='/usr/local/hive/bin/')
+        
+        self.assertEqual(exist_check_status, 0) # OK
 
-
+    def test_hive_count_rows_in_table_not_exists(self):
+        """
+        Functional test for Ecosystem Hive
+        count rows in a table that does not exist 
+        """
+        hive_command = "hive -e 'select count(*) from table_not_exists';"
+        exist_check_status = ssh_call_hadoop(self.user, self.master_IP, hive_command, hadoop_path='/usr/local/hive/bin/')
+        
+        self.assertEqual(exist_check_status, 17) # ERROR table not found
+    
+    def put_file_to_hdfs(self, file_to_create):
+        """
+        Helper method to create file in Hdfs before test.
+        """
+        self.hadoop_local_fs_action('echo "test file for hdfs" > {0}'.format(file_to_create))
+        ssh_call_hadoop(self.user, self.master_IP, ' dfs -put {0}'.format(file_to_create),
+                        hadoop_path=self.hdfs_path)    
+    
     def delete_hdfs_files(self, file_to_delete, prefix=""):
         """
         Helper method to delete files transfered to hdfs filesystem after test.
         """
         ssh_call_hadoop(self.user, self.master_IP, ' dfs -rm {0} {1}'.format(prefix, file_to_delete),
                         hadoop_path=self.hdfs_path)
-
+        
     def delete_local_files(self, file_to_delete):
         """
         Helper method to delete files transfered to local filesystem after test.
@@ -217,19 +175,6 @@ class ClouderaTest(unittest.TestCase):
         else:
             print("Error: {0} test file not found".format(file_to_delete))
 
-    def delete_pithos_files(self, file_to_delete):
-        """
-        Helper method to delete files transfered to pithos filesystem after test.
-        """
-        subprocess.call('kamaki file delete --yes {}'.format(file_to_delete), stderr=FNULL, shell=True)
-
-    def put_file_to_hdfs(self, file_to_create):
-        """
-        Helper method to create file in Hdfs before test.
-        """
-        self.hadoop_local_fs_action('echo "test file for hdfs" > {0}'.format(file_to_create))
-        ssh_call_hadoop(self.user, self.master_IP, ' dfs -put {0}'.format(file_to_create),
-                        hadoop_path=self.hdfs_path)
 
     def hadoop_local_fs_action(self, action):
         """
@@ -237,6 +182,12 @@ class ClouderaTest(unittest.TestCase):
         """
         subprocess.call("ssh {0}@".format(self.user) + self.master_IP + " \"" + action +
                         "\"", stderr=FNULL, shell=True)
+        
+    def delete_pithos_files(self, file_to_delete):
+        """
+        Helper method to delete files transfered to pithos filesystem after test.
+        """
+        subprocess.call('kamaki file delete --yes {}'.format(file_to_delete), stderr=FNULL, shell=True)
 
     def tearDown(self):
         """
