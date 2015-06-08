@@ -45,7 +45,7 @@ testClusterCreate(){
 	# act
 	if [ "$DO_INTEGRATION_TEST" = true ]; then
 		# orka create name_of_cluster cluster_size master_cpus master_ram master_disksize slave_cpus slave_ram slave_disksize disk_template project_name replication blocksize
-		declare -a ARR_RESULT=($(orka create integration_test 2 4 6114 20 4 6144 20 standard escience.grnet.gr 2 128 --use_hadoop_image Hadoop_2\.6\.0\-Cloudera\-CDH\-5\.4\.2))
+		declare -a ARR_RESULT=($(orka create cloudera_integration_test 2 4 6144 20 4 6144 20 standard escience.grnet.gr 2 128 --use_hadoop_image Hadoop_2\.6\.0\-Cloudera\-CDH\-5\.4\.2))
 		CLUSTER_ID=${ARR_RESULT[1]}
 		MASTER_IP=${ARR_RESULT[3]}
 		export SSHPASS=${ARR_RESULT[5]}
