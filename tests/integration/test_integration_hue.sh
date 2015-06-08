@@ -45,7 +45,7 @@ testClusterCreate(){
 	# act
 	if [ "$DO_INTEGRATION_TEST" = true ]; then
 		# orka create name_of_cluster size_of_cluster master_cpus master_ram master_disksize slave_cpus slave_ram slave_disksize disk_template project_name replication blocksize
-		declare -a ARR_RESULT=($(orka create integration_test 2 4 6144 20 4 6144 20 standard escience.grnet.gr 1 128 --use_hadoop_image Hue-3.8.0))
+		declare -a ARR_RESULT=($(orka create hue_integration_test 2 4 6144 20 4 6144 20 standard escience.grnet.gr 1 128 --use_hadoop_image Hue-3.8.0))
 		CLUSTER_ID=${ARR_RESULT[1]}
 		MASTER_IP=${ARR_RESULT[3]}
 		export SSHPASS=${ARR_RESULT[5]}
