@@ -45,19 +45,19 @@ testClusterCreate(){
 	# act
 	if [ "$DO_INTEGRATION_TEST" = true ]; then
 		# orka create name_of_cluster size_of_cluster master_cpus master_ram master_disksize slave_cpus slave_ram slave_disksize disk_template project_name replication blocksize
-		#declare -a ARR_RESULT=($(orka create integration_test 2 4 6144 20 4 6144 20 standard escience.grnet.gr 1 128 --use_hadoop_image Ecosystem-on-Hue-3.8.0))
-		CLUSTER_ID=1
-		MASTER_IP=83.212.119.123
-		export SSHPASS=root	#${ARR_RESULT[5]}
+		declare -a ARR_RESULT=($(orka create integration_test 2 4 6144 20 4 6144 20 standard escience.grnet.gr 1 128 --use_hadoop_image Ecosystem-on-Hue-3.8.0))
+		CLUSTER_ID=${ARR_RESULT[1]}
+		MASTER_IP=${ARR_RESULT[3]}
+		export SSHPASS=${ARR_RESULT[5]}
 		if [ -n "$MASTER_IP" ]; then
 			HOST=hduser@$MASTER_IP
 			ROOTHOST=root@$MASTER_IP
 			HADOOP_HOME=/usr/local/hadoop
-#			sshpass -e scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ~/.ssh/id_rsa.pub $ROOTHOST:/home/hduser/
-#			sshpass -e ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $ROOTHOST \
-#			'cat /home/hduser/id_rsa.pub >> /home/hduser/.ssh/authorized_keys;
-#			rm -f /home/hduser/id_rsa.pub;
-#			exit'
+			sshpass -e scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ~/.ssh/id_rsa.pub $ROOTHOST:/home/hduser/
+			sshpass -e ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $ROOTHOST \
+			'cat /home/hduser/id_rsa.pub >> /home/hduser/.ssh/authorized_keys;
+			rm -f /home/hduser/id_rsa.pub;
+			exit'
 		fi
 	else
 		startSkipping
@@ -154,7 +154,7 @@ testRegisteredpithosFS(){
 # 12 Destroy
 testClusterDestroy(){
 	if [ "$DO_INTEGRATION_TEST" = true ]; then
-		RESULT=pass	#$(orka destroy $CLUSTER_ID)
+		RESULT=$(orka destroy $CLUSTER_ID)
 	else
 		startSkipping
 	fi
