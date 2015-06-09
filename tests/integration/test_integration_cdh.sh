@@ -12,10 +12,9 @@
 # 06. wordcount
 # 07. teragen
 # 08. pithosFS is registered
-# 09. runPI pithosFS
-# 10. wordcount pithosFS
-# 11. teragen pithosFS
-# 12. Destroy Cluster
+# 09. wordcount pithosFS
+# 10. teragen pithosFS
+# 11. Destroy Cluster
 
 
 oneTimeSetUp(){
@@ -29,9 +28,10 @@ oneTimeSetUp(){
 
 oneTimeTearDown(){
 	# runs after whole test suite
-	rm -f ~/.kamakirc
+	kamaki file delete out_teragen -r --yes
 	rm -f _tmp.txt
 	unset SSHPASS
+	rm -f ~/.kamakirc
 }
 
 tearDown(){
@@ -46,8 +46,8 @@ testClusterCreate(){
 	# arrange
 	# act
 	if [ "$DO_INTEGRATION_TEST" = true ]; then
-		# orka create name_of_cluster cluster_size master_cpus master_ram master_disksize slave_cpus slave_ram slave_disksize disk_template project_name replication blocksize
-		declare -a ARR_RESULT=($(orka create cloudera_integration_test 2 4 6144 20 4 6144 20 standard escience.grnet.gr 2 128 --use_hadoop_image Hadoop_2\.6\.0\-Cloudera\-CDH\-5\.4\.2))
+		# orka create name_of_cluster size_of_cluster master_cpus master_ram master_disksize slave_cpus slave_ram slave_disksize disk_template project_name replication blocksize
+		declare -a ARR_RESULT=($(orka create cdh_integration_test 2 4 6144 20 4 6144 20 standard escience.grnet.gr 2 128 --use_hadoop_image Hadoop_2\.6\.0\-Cloudera\-CDH\-5\.4\.2))
 		CLUSTER_ID=${ARR_RESULT[1]}
 		MASTER_IP=${ARR_RESULT[3]}
 		export SSHPASS=${ARR_RESULT[5]}
@@ -153,23 +153,38 @@ testRegisteredpithosFS(){
 	assertTrue 'pithosFS registration Failed' '[ "$RESULT" -eq 0 ]'
 }
 
-# 10. wordcount pithosFS
+# 09. wordcount pithosFS
 testpithosFSwordcount(){
 	if [ "$DO_INTEGRATION_TEST" = true ]; then
+#TO_DO		ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $ROOTHOST \
+#TO_DO		'/usr/bin/hdfs dfs -put /usr/lib/hadoop/LICENSE.txt LICENSE.txt' > _tmp.txt 2>&1
 #		ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $ROOTHOST \
-#		'/usr/bin/hdfs dfs -put /usr/lib/hadoop/LICENSE.txt LICENSE.txt' > _tmp.txt 2>&1
+#		'/usr/lib/hadoop/bin/hadoop jar /usr/lib/hadoop-mapreduce/hadoop-mapreduce-examples.jar wordcount pithos://pithos/WordCount/warpeace.txt out_pithos_wordcount' 2>&1 | tee _tmp.txt
+#		ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $ROOTHOST \
+#		'/usr/bin/hdfs dfs -test -e out_pithos_wordcount/_SUCCESS' > _tmp.txt 2>&1
+#		RESULT="$?"
+		pass
+	else
+		startSkipping
+	fi
+	assertTrue 'pithosFS wordcount Failed' '[ "$RESULT" -eq 0 ]'
+}
+
+# 10. teragen pithosFS
+testpithosFSteragen(){
+	if [ "$DO_INTEGRATION_TEST" = true ]; then
 		ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $ROOTHOST \
-		'/usr/lib/hadoop/bin/hadoop jar /usr/lib/hadoop-mapreduce/hadoop-mapreduce-examples.jar wordcount pithos://pithos/WordCount/warpeace.txt out_pithos_wordcount' 2>&1 | tee _tmp.txt
+		'/usr/lib/hadoop/bin/hadoop jar /usr/lib/hadoop-mapreduce/hadoop-mapreduce-examples.jar teragen 1342177 pithos://pithos/out_teragen/' 2>&1 | tee _tmp.txt
 		ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $ROOTHOST \
-		'/usr/bin/hdfs dfs -test -e out_pithos_wordcount/_SUCCESS' > _tmp.txt 2>&1
+		'/usr/bin/hdfs dfs -test -e pithos://pithos/out_teragen/_SUCCESS' > _tmp.txt 2>&1
 		RESULT="$?"
 	else
 		startSkipping
 	fi
-	assertTrue 'HDFS wordcount Failed' '[ "$RESULT" -eq 0 ]'
+	assertTrue 'pithosFS teragen Failed' '[ "$RESULT" -eq 0 ]'
 }
 
-# 12 Destroy
+# 11 Destroy
 testClusterDestroy(){
 	if [ "$DO_INTEGRATION_TEST" = true ]; then
 		RESULT=$(orka destroy $CLUSTER_ID)
