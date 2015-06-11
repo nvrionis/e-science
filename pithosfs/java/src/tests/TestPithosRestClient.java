@@ -3,7 +3,6 @@ package tests;
 import gr.grnet.escience.commons.PithosSerializer;
 import gr.grnet.escience.commons.Utils;
 import gr.grnet.escience.fs.pithos.PithosBlock;
-import gr.grnet.escience.fs.pithos.PithosFileSystem;
 import gr.grnet.escience.fs.pithos.PithosObject;
 import gr.grnet.escience.pithos.rest.HadoopPithosConnector;
 import gr.grnet.escience.pithos.rest.PithosResponse;
@@ -24,7 +23,7 @@ import org.junit.AfterClass;
 public class TestPithosRestClient {
     private static final String PITHOS_STORAGE_SYSTEM_URL = "https://pithos.okeanos.grnet.gr/v1";
     private static final String UUID = "ec567bea-4fa2-433d-9935-261a0867ec60";
-    private static final String TOKEN = "SFy6ATmUS2cdkbJZkwTDs_cujtFQ87LOCKiLIQiML3g";
+    private static final String TOKEN = "n4kvgYT_8TEe8lwcWmOspulv5eZbyeBaSokmW6IfIQo";
     private static final String PITHOS_CONTAINER = "pithos";
     private static final String PITHOS_FILE_TO_DOWNLOAD = "tests/newPithosObjectData.txt";
     private static final String PITHOS_FILE_TO_DOWNLOAD_BLOCK = "tests/newPithosObjectData.txt";
@@ -38,7 +37,6 @@ public class TestPithosRestClient {
     private static PithosResponse pithosResponse;
     private static Collection<String> object_block_hashes;
     private static HadoopPithosConnector hdconnector;
-    private static final Utils util = new Utils();
     private static final String BIG_BLOCK_FILE = "bigBlockFile.txt";
     private static final int SIZE_OF_BIG_BLOCK_FILE = 9437184;
 
@@ -382,7 +380,7 @@ public class TestPithosRestClient {
 
         // - Local parameters
         String BLOCK_HASH;
-        BLOCK_HASH = util.computeHash(DUMMY_BLOCK_DATA.getBytes(), "SHA-256");
+        BLOCK_HASH = Utils.computeHash(DUMMY_BLOCK_DATA.getBytes(), "SHA-256");
 
         System.out.println("GENERATED HASH: " + BLOCK_HASH);
 
@@ -429,7 +427,7 @@ public class TestPithosRestClient {
         byte[] bigBlockData = PithosSerializer.serializeFile(bigBlock);
 
         // - Generate HASH CODE
-        BLOCK_HASH = util.computeHash(bigBlockData, "SHA-256");
+        BLOCK_HASH = Utils.computeHash(bigBlockData, "SHA-256");
 
         // - Create Pithos Object instance
         PithosBlock pithosBlock = new PithosBlock(BLOCK_HASH,
