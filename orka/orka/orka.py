@@ -585,7 +585,12 @@ def main():
     # add commands shared by all subparsers so we don't have to duplicate them
     common_parser = ArgumentParser(add_help=False)
     common_parser.add_argument("--token", metavar='token', default=kamaki_token, type=checker.a_string_is,
-                              help='Synnefo authentication token. Default read from .kamakirc')
+                              help='Synnefo authentication token. Default read from .kamakirc')    
+    common_parser.add_argument("--replication_factor", metavar='replication_factor', default=2, type=checker.positive_num_is,
+                              help='Replication factor for HDFS. Must be between 1 and number of slave nodes (cluster_size -1). Default is 2.')
+
+    common_parser.add_argument("--dfs_blocksize", metavar='dfs_blocksize', default=128, type=checker.positive_num_is,
+                              help='Dfs_blocksize at HDFS in megabytes. Default is 128.')   
     common_parser.add_argument("--auth_url", metavar='auth_url', default=auth_url,
                               help='Synnefo authentication url. Default is ' +
                               auth_url)
@@ -643,13 +648,7 @@ def main():
         parser_create.add_argument("--use_hadoop_image", help='Use a pre-stored hadoop image for the cluster.'
                               ' Default is HadoopImage (overrides image selection)',
                               nargs='?', metavar='hadoop_image_name', default=None,
-                              const='Hadoop-2.5.2') 
-        parser_create.add_argument("replication_factor", help='Replication factor for HDFS. Must be between 1 and number of slave nodes (cluster_size -1)',
-                              type=checker.positive_num_is)
-        parser_create.add_argument("dfs_blocksize", help='Dfs_blocksize at HDFS in megabytes',
-                              type=checker.positive_num_is)      
-
-
+                              const='Hadoop-2.5.2')
         parser_destroy.add_argument('cluster_id',
                               help='The id of the Hadoop cluster', type=checker.positive_num_is)
 
