@@ -39,7 +39,7 @@ def get_from_kamaki_conf(section, option, action=None):
         raise ClientError(msg, error_syntax_auth_token)
     
     if option_value:
-        if not action:
+       if not action:
             return option_value
         else:
             if action == 'login':
