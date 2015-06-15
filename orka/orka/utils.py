@@ -61,14 +61,14 @@ def get_from_kamaki_conf(section, option, action=None):
 
 class ClusterRequest(object):
     """Class for REST requests to application server."""
-    def __init__(self, escience_token, payload, action='login'):
+    def __init__(self, escience_token, server_url, payload, action='login'):
         """
         Initialize escience token used for token authentication, payload
         and appropriate headers for the request.
         """
         self.escience_token = escience_token
         self.payload = payload
-        self.url = get_from_kamaki_conf('orka','base_url',action)
+        self.url = server_url
         self.headers = {'Accept': 'application/json','content-type': 'application/json',
                         'Authorization': 'Token ' + self.escience_token}
 
@@ -102,7 +102,7 @@ class ClusterRequest(object):
         
 
 
-def get_user_clusters(token):
+def get_user_clusters(token, server_url):
     """
     Get the clusters of the user
     """
@@ -115,7 +115,7 @@ def get_user_clusters(token):
         print ' ' + str(e.args[0])
 
     payload = {"user": {"id": 1}}
-    orka_request = ClusterRequest(escience_token, payload, action='login')
+    orka_request = ClusterRequest(escience_token, server_url, payload, action='login')
     user_data = orka_request.retrieve()
     user_clusters = user_data['user']['clusters']
     return user_clusters
