@@ -27,7 +27,7 @@ THIS_TEST="${FULLNAME%.*}"
 oneTimeSetUp(){
 	# runs before whole test suite
 	if [ -z "${STAGING_IP}" ]; then
-		STAGING_IP=http://83.212.116.139
+		STAGING_IP=http://83.212.117.56
 	fi
 	local OKEANOS_TOKEN=$(cat .private/.config.txt | grep "token" |cut -d' ' -f3)
 	echo -e '[global]\ndefault_cloud = ~okeanos\nignore_ssl = on\n[cloud "~okeanos"]\nurl = https://accounts.okeanos.grnet.gr/identity/v2.0\ntoken = '$OKEANOS_TOKEN'\n[orka]\nbase_url = '$STAGING_IP > ~/.kamakirc	
