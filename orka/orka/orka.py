@@ -592,8 +592,7 @@ def main():
                               help='Synnefo authentication url. Default is ' +
                               auth_url)
     common_parser.add_argument("--server_url", metavar='server_url', default=kamaki_base_url,
-                              help='Application server url.  Default read from .kamakirc' +
-                              auth_url)
+                              help='Application server url.  Default read from .kamakirc')
     # cluster actions group
     parser_create = orka_subparsers.add_parser('create', parents=[common_parser],
                                      help='Create a Hadoop-Yarn cluster'
