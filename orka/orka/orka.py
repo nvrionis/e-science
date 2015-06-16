@@ -3,7 +3,7 @@
 
 """orka.orka: provides entry point main()."""
 import logging
-from sys import argv, stdout
+from sys import argv, stdout, stderr
 from kamaki.clients import ClientError
 from kamaki.clients.pithos import PithosClient
 from kamaki.clients.astakos import AstakosClient
@@ -99,19 +99,24 @@ def task_message(task_id, escience_token, server_url, wait_timer, task='not_prog
                 stdout.write('{0}\r'.format(response['job']['state']))
                 stdout.flush()
             else:
-                logging.log(SUMMARY, response['job']['state'])
-                logging.log(SUMMARY, ' Waiting for cluster status update...')
+                stderr.write('{0}'.format('\r'))
+                logging.log(SUMMARY, '{0}'.format(response['job']['state']))
+
             previous_response = response
 
         else:
+            stderr.write('{0}'.format('.'))
             sleep(wait_timer)
         response = yarn_cluster_logger.retrieve()
+        stderr.flush()
 
 
     if 'success' in response['job']:
+        stderr.write('{0}'.format('\r'))
         return response['job']['success']
 
     elif 'error' in response['job']:
+        stderr.write('{0}'.format('\r'))
         logging.error(response['job']['error'])
         exit(error_fatal)
 
@@ -149,11 +154,11 @@ class HadoopCluster(object):
                 logging.error(response['clusterchoice']['message'])
                 exit(error_fatal)
             result = task_message(task_id, self.escience_token, self.server_url, wait_timer_create)
-            logging.log(SUMMARY, " Yarn Cluster is active.You can access it through " +
-                        result['master_IP'] + ":8088/cluster")
-            logging.log(SUMMARY, " The root password of your master VM is " + result['master_VM_password'])
-            stdout.write("cluster_id: {0} master_IP: {1} password: {2}".format(result['cluster_id'], result['master_IP'], result['master_VM_password']))
-
+            logging.log(SUMMARY, " YARN Cluster is active.You can access it through {0}:8088/cluster".format(result['master_IP']))
+            stdout.write("Your Cluster has the following properties:\ncluster_id: {0}\nmaster_IP: {1}\n"
+                         "root password: {2}\n".format(result['cluster_id'], result['master_IP'],
+                                                        result['master_VM_password']))
+            exit(SUCCESS)
 
         except Exception, e:
             logging.error(' Fatal error: ' + str(e.args[0]))
@@ -175,8 +180,8 @@ class HadoopCluster(object):
             response = yarn_cluster_req.delete_cluster()
             task_id = response['clusterchoice']['task_id']
             result = task_message(task_id, self.escience_token, self.server_url, wait_timer_delete)
-            logging.log(SUMMARY, ' Cluster with name "%s" and all its resources deleted' %(result))
-            stdout.write("DESTROYED {0}".format(result))
+            logging.log(SUMMARY, ' Cluster with name "{0}" and all its resources deleted'.format(result))
+            exit(SUCCESS)
         except Exception, e:
             logging.error(str(e.args[0]))
             exit(error_fatal)
@@ -195,7 +200,7 @@ class HadoopCluster(object):
         else:
             logging.error(' Hadoop can only be managed for an active cluster.')
             exit(error_fatal)
-        if active_cluster:            
+        if active_cluster:
             if (active_cluster['hadoop_status'] == const_hadoop_status_started and action == "start"):
                 logging.error(' Hadoop already started.')
                 exit(error_fatal)
@@ -209,7 +214,7 @@ class HadoopCluster(object):
             task_id = response['clusterchoice']['task_id']
             result = task_message(task_id, self.escience_token, self.server_url, wait_timer_delete)
             logging.log(SUMMARY, result)
-            stdout.write("{0}: {1}".format(str.upper(action),result))
+            exit(SUCCESS)
         except Exception, e:
             logging.error(str(e.args[0]))
             exit(error_fatal)
@@ -587,7 +592,7 @@ def main():
     # add commands shared by all subparsers so we don't have to duplicate them
     common_parser = ArgumentParser(add_help=False)
     common_parser.add_argument("--token", metavar='token', default=kamaki_token, type=checker.a_string_is,
-                              help='Synnefo authentication token. Default read from .kamakirc')      
+                              help='Synnefo authentication token. Default read from .kamakirc')
     common_parser.add_argument("--auth_url", metavar='auth_url', default=auth_url,
                               help='Synnefo authentication url. Default is ' +
                               auth_url)

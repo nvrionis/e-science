@@ -69,7 +69,7 @@ class ClusterRequest(object):
         self.escience_token = escience_token
         self.payload = payload
         self.url = get_from_kamaki_conf('orka','base_url',action)
-        self.url =server_url + re.split('http://[^/]+',self.url)[-1]
+        self.url = server_url + re.split('http://[^/]+',self.url)[-1]
         self.headers = {'Accept': 'application/json','content-type': 'application/json',
                         'Authorization': 'Token ' + self.escience_token}
 
@@ -130,7 +130,7 @@ def authenticate_escience(token, server_url):
     payload = {"user": {"token": token}}
     headers = {'content-type': 'application/json'}
     try:
-        url_login = server_url+login_endpoint
+        url_login = server_url + login_endpoint
     except ClientError, e:
         raise e
     r = requests.post(url_login, data=json.dumps(payload), headers=headers)
