@@ -27,7 +27,7 @@ THIS_TEST="${FULLNAME%.*}"
 oneTimeSetUp(){
 	# runs before whole test suite
 	if [ -z "${STAGING_IP}" ]; then
-		STAGING_IP=http://83.212.117.56
+		STAGING_IP=http://83.212.115.45
 	fi
 	local OKEANOS_TOKEN=$(cat .private/.config.txt | grep "token" |cut -d' ' -f3)
 	echo -e '[global]\ndefault_cloud = ~okeanos\nignore_ssl = on\n[cloud "~okeanos"]\nurl = https://accounts.okeanos.grnet.gr/identity/v2.0\ntoken = '$OKEANOS_TOKEN'\n[orka]\nbase_url = '$STAGING_IP > ~/.kamakirc	
@@ -54,7 +54,7 @@ testClusterCreate(){
 	# act
 	if [ "$DO_INTEGRATION_TEST" = "$THIS_TEST" ]; then
 		# orka create name_of_cluster size_of_cluster master_cpus master_ram master_disksize slave_cpus slave_ram slave_disksize disk_template project_name
-		( $(orka create hdp_integration_test 2 4 4096 5 2 4096 10 standard escience.grnet.gr --use_hadoop_image Hadoop\-2\.5\.2\-Debian\-8\.0 >_tmp.txt 2> /dev/null) ) & keepAlive $! " Working"
+		( $(orka create hdp_integration_test 3 4 4096 5 2 4096 10 standard escience.grnet.gr --image Hadoop\-2\.5\.2\-Debian\-8\.0 >_tmp.txt 2> /dev/null) ) & keepAlive $! " Working"
 		declare -a ARR_RESULT=($(cat _tmp.txt))
 		# Your Cluster has the following properties: cluster_id: xx master_IP: x.x.x.x root password: xxxxxxxx 
 		# (13 items, 0-based array, so relevant items at positions 7(cluster_id), 9(master_IP), 12(password))
