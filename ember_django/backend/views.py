@@ -7,9 +7,10 @@ Views for django rest framework .
 @author: Ioannis Stenos, Nick Vrionis
 """
 import logging
+from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework.permissions import AllowAny
 from kamaki.clients import ClientError
 from authenticate_user import *
 from django.views import generic
@@ -26,7 +27,6 @@ from tasks import create_cluster_async, destroy_cluster_async, \
 from create_cluster import YarnCluster
 from celery.result import AsyncResult
 from reroute_ssh import HdfsRequest
-from rest_framework.permissions import AllowAny
 from django.db.models import Q
 
 logging.addLevelName(REPORT, "REPORT")
