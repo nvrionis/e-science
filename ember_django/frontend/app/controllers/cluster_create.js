@@ -1,7 +1,7 @@
 // Cluster Create controller
 App.ClusterCreateController = Ember.Controller.extend({
 
-	needs : 'userWelcome',
+	needs : ['userWelcome', 'clusterManagement'],
 	project_index : 0, 		// index (position in the array) of the project
 	project_current : '', 		// current project
 	project_name : '', 		// name of the project
@@ -48,6 +48,7 @@ App.ClusterCreateController = Ember.Controller.extend({
 	vm_flav_slave_Small_disabled : false, 
 	vm_flav_slave_Medium_disabled : false, 
 	vm_flav_slave_Large_disabled : false,
+	hue_message : '', 		// variable for Hue first login popover message
 	last_cluster_conf_checked: false,	// flag for last cluster configuration (when it is selected)
 	last_conf_message : '',			// last configuration in message to be displayed on screen
 	// selected project, image, cluster size, storage, from last configuration 
@@ -755,6 +756,7 @@ App.ClusterCreateController = Ember.Controller.extend({
 		this.set('message', '');
 		this.set('replication_factor', '');		
 		this.set('dfs_blocksize', '');
+		this.set('hue_message', '');
 		this.init_alerts();
 	},
 	// initialize alert messages
@@ -795,6 +797,17 @@ App.ClusterCreateController = Ember.Controller.extend({
 		}
 		return this.get('warning_mes_dfs_blocksize');
 	}.property('dfs_blocksize'),
+	
+	message_hue_login : function(){
+		this.get('controllers.clusterManagement').send('help_hue_login', this.get('operating_system'));
+		if (this.get('hue_message') === 'CDH'){
+			var msg = {'msg_type':'warning','msg_text':' IMPORTANT: Login in Hue browser with username : hdfs'};
+			this.get('controllers.userWelcome').send('addMessage',msg);
+		} else if (this.get('hue_message') === 'HUE'){
+			var msg = {'msg_type':'warning','msg_text':' IMPORTANT: Login in Hue browser with username : hduser'};
+			this.get('controllers.userWelcome').send('addMessage',msg);
+		}
+	},
 
 	actions : {
 		// action to focus project selection view
@@ -843,6 +856,7 @@ App.ClusterCreateController = Ember.Controller.extend({
 						self.set('slaves_ram_selection', clusterdata.ram_slaves);
 						self.set('master_disk_selection', clusterdata.disk_master);
 						self.set('slaves_disk_selection', clusterdata.disk_slaves);	
+						self.message_hue_login();
 					}
 					else{
 						self.set('alert_mes_last_conf', 'Lack of available resources.');
@@ -1212,7 +1226,9 @@ App.ClusterCreateController = Ember.Controller.extend({
 						'replication_factor' : self.get('replication_factor'),
 						'dfs_blocksize': self.get('dfs_blocksize')
 					}).save();
-
+					
+					this.message_hue_login();
+					
 					cluster_selection.then(function(clusterchoice) {
 						// Set the response to user's create cluster click when put succeeds.
 						$.loader.close(true);

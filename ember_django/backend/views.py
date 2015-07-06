@@ -27,7 +27,7 @@ from tasks import create_cluster_async, destroy_cluster_async, \
 from create_cluster import YarnCluster
 from celery.result import AsyncResult
 from reroute_ssh import HdfsRequest
-from django.db.models import Q
+
 
 logging.addLevelName(REPORT, "REPORT")
 logging.addLevelName(SUMMARY, "SUMMARY")
