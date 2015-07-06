@@ -821,7 +821,6 @@ App.ClusterCreateController = Ember.Controller.extend({
 			} else {
 				this.set('replication_factor', this.get('default_replication_factor'));
 			}
-			console.log(this.get('replication_factor'))
 			this.set('dfs_blocksize', this.get('default_dfs_blocksize'));
 		},
 		// action to apply last cluster configuration
