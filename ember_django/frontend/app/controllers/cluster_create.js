@@ -815,8 +815,13 @@ App.ClusterCreateController = Ember.Controller.extend({
 			$('#project_id').focus();
 		},
 		// action to reset hdfs configuration parameters in default values
-		default_hdfs_configuration : function(){
-			this.set('replication_factor', this.get('default_replication_factor'));
+		default_hdfs_configuration : function(){	
+			if (this.get('cluster_size') === 2) {
+				this.set('replication_factor', '1');		
+			} else {
+				this.set('replication_factor', this.get('default_replication_factor'));
+			}
+			console.log(this.get('replication_factor'))
 			this.set('dfs_blocksize', this.get('default_dfs_blocksize'));
 		},
 		// action to apply last cluster configuration
