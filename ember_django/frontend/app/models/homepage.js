@@ -8,7 +8,6 @@ App.Homepage = DS.Model.extend({
 
 //Information about images and components
 App.Okeanosimage = DS.Model.extend({
-	id : attr('number'),				// id of the image
 	image_name : attr('string'),		// name of the image
 	debian : attr('string'),		    // version of debian in the image
 	hadoop : attr('string'),		    // version of hadoop in the image
