@@ -12,17 +12,4 @@ App.HomepageRoute = Ember.Route.extend({
 			console.log(reason.message);
 		});
 	},
-
-	actions : {
-		didTransition : function(transition) {
-			var that = this;
-			// Perform GET request for images
-			this.store.fetch('okeanosimage', {}).then(function(images) {
-				alert('test');
-				console.log(images.get('content'));
-			}, function(reason) {
-				console.log(reason.message);
-			});
-		}
-	}
 });
