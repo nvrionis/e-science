@@ -267,3 +267,51 @@ class ClusterInfo(models.Model):
 
         return ("%d, %s, %d, %s , %s") % (self.id, self.cluster_name, self.cluster_size,
                                           self.cluster_status, self.hadoop_status)
+    
+class OkeanosImages(models.Model):
+    """
+    Definition of Components metadata object model.
+    """
+    id = models.AutoField("Metadata_ID", primary_key=True, null=False,
+                               help_text="Auto-increment newsitem id")
+
+    image_name = models.CharField("OS Image", max_length=255, null=False,
+                                help_text="Operating system of the cluster")
+
+    debian = models.CharField("Debian version", max_length=30, null=False,
+                                    help_text="Debian Version")
+
+    hadoop = models.CharField("Hadoop version", max_length=30, null=False,
+                                    help_text="Version of Hadoop")
+
+    flume = models.CharField("Component flume", max_length=30, null=True,
+                                    help_text="Version of flume component")
+
+    oozie = models.CharField("Component oozie", max_length=30, null=True,
+                                    help_text="Version of oozie component")
+
+    spark = models.CharField("Component spark", max_length=30, null=True,
+                                    help_text="Version of spark component")
+
+    pig = models.CharField("Component pig", max_length=30, null=True,
+                                    help_text="Version of pig component")
+
+    hive = models.CharField("Component hive", max_length=30, null=True,
+                                    help_text="Version of hive component")
+
+    hbase = models.CharField("Component hbase", max_length=30, null=True,
+                                    help_text="Version of hbase component")
+
+    hue = models.CharField("Hue version", max_length=30, null=True,
+                                    help_text="Version of hue component")
+
+    cloudera = models.CharField("Cloudera version", max_length=30, null=True,
+                                    help_text="Version of cloudera")
+
+    class Meta:
+        verbose_name = "OkeanosImage"
+        app_label = 'backend'
+
+    def __unicode__(self):
+
+        return ("%d, %s") % (self.id, self.image_name)
