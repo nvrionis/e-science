@@ -1,7 +1,7 @@
 // Cluster Create controller
 App.ClusterCreateController = Ember.Controller.extend({
 
-	needs : ['userWelcome', 'clusterManagement'],
+	needs : 'userWelcome',
 	project_index : 0, 		// index (position in the array) of the project
 	project_current : '', 		// current project
 	project_name : '', 		// name of the project
@@ -48,7 +48,6 @@ App.ClusterCreateController = Ember.Controller.extend({
 	vm_flav_slave_Small_disabled : false, 
 	vm_flav_slave_Medium_disabled : false, 
 	vm_flav_slave_Large_disabled : false,
-	hue_message : '', 		// variable for Hue first login popover message
 	last_cluster_conf_checked: false,	// flag for last cluster configuration (when it is selected)
 	last_conf_message : '',			// last configuration in message to be displayed on screen
 	// selected project, image, cluster size, storage, from last configuration 
@@ -57,7 +56,7 @@ App.ClusterCreateController = Ember.Controller.extend({
 	selected_image : '',
 	selected_storage : '',
 	alert_mes_last_conf : '',	// alert message when resources are not enough to apply last configuration
-	flavor_settings : {'Small': {'cpu': 2, 'ram': 2048, 'disk': 10}, 'Medium': {'cpu': 4, 'ram': 2048, 'disk': 20}, 'Large': {'cpu': 4, 'ram': 4096, 'disk': 40}}, // Small Medium and Large predefined flavors	
+	flavor_settings : {'Small': {'cpu': 2, 'ram': 2048, 'disk': 10}, 'Medium': {'cpu': 4, 'ram': 4096, 'disk': 20}, 'Large': {'cpu': 4, 'ram': 6144, 'disk': 40}}, // Small Medium and Large predefined flavors	
 	reverse_storage_lookup : {'ext_vlmc': 'Archipelago','drbd': 'Standard'},
 	list_of_flavors : ['cpu', 'ram', 'disk'], // List of flavors from kamaki except storage space
 	number_of_flavors : 3,
@@ -756,7 +755,6 @@ App.ClusterCreateController = Ember.Controller.extend({
 		this.set('message', '');
 		this.set('replication_factor', '');		
 		this.set('dfs_blocksize', '');
-		this.set('hue_message', '');
 		this.init_alerts();
 	},
 	// initialize alert messages
@@ -797,17 +795,6 @@ App.ClusterCreateController = Ember.Controller.extend({
 		}
 		return this.get('warning_mes_dfs_blocksize');
 	}.property('dfs_blocksize'),
-	
-	message_hue_login : function(){
-		this.get('controllers.clusterManagement').send('help_hue_login', this.get('operating_system'));
-		if (this.get('hue_message') === 'CDH'){
-			var msg = {'msg_type':'warning','msg_text':' IMPORTANT: Login in Hue browser with username : hdfs'};
-			this.get('controllers.userWelcome').send('addMessage',msg);
-		} else if (this.get('hue_message') === 'HUE'){
-			var msg = {'msg_type':'warning','msg_text':' IMPORTANT: Login in Hue browser with username : hduser'};
-			this.get('controllers.userWelcome').send('addMessage',msg);
-		}
-	},
 
 	actions : {
 		// action to focus project selection view
@@ -815,12 +802,8 @@ App.ClusterCreateController = Ember.Controller.extend({
 			$('#project_id').focus();
 		},
 		// action to reset hdfs configuration parameters in default values
-		default_hdfs_configuration : function(){	
-			if (this.get('cluster_size') === 2) {
-				this.set('replication_factor', '1');		
-			} else {
-				this.set('replication_factor', this.get('default_replication_factor'));
-			}
+		default_hdfs_configuration : function(){
+			this.set('replication_factor', this.get('default_replication_factor'));
 			this.set('dfs_blocksize', this.get('default_dfs_blocksize'));
 		},
 		// action to apply last cluster configuration
@@ -860,7 +843,6 @@ App.ClusterCreateController = Ember.Controller.extend({
 						self.set('slaves_ram_selection', clusterdata.ram_slaves);
 						self.set('master_disk_selection', clusterdata.disk_master);
 						self.set('slaves_disk_selection', clusterdata.disk_slaves);	
-						self.message_hue_login();
 					}
 					else{
 						self.set('alert_mes_last_conf', 'Lack of available resources.');
@@ -1230,9 +1212,7 @@ App.ClusterCreateController = Ember.Controller.extend({
 						'replication_factor' : self.get('replication_factor'),
 						'dfs_blocksize': self.get('dfs_blocksize')
 					}).save();
-					
-					this.message_hue_login();
-					
+
 					cluster_selection.then(function(clusterchoice) {
 						// Set the response to user's create cluster click when put succeeds.
 						$.loader.close(true);
