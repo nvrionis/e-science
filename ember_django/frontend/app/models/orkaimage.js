@@ -5,15 +5,6 @@ App.Orkaimage = DS.Model.extend({
 	image_pithos_uuid : attr('string'), // Linked Pithos Image UUID
 	image_components : attr('string'), // Stringified OrkaImage Components metadata (json.dumps)
 
-	components : function() {
-		var compobj = JSON.parse(this.get('image_components'));
-		var comp = [];
-		for (key in compobj) {
-			comp.push([key, compobj[key]]);
-		}
-		return comp;
-	}.property('image_components'),
-
 	active_image : function() {
 		var name = this.get('image_name');
 		if (name == 'Cloudera-CDH-5.4.2') {
