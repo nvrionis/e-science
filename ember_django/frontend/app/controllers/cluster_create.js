@@ -905,6 +905,7 @@ App.ClusterCreateController = Ember.Controller.extend({
 			if (!Ember.isEmpty(this.get('last_cluster'))) {
 				// find and select the last project
 				var projects = [];
+				this.set('oozie_filter', 'Off');
 				projects = this.get('projects_av');
 				var length = projects.length;
 				for (var i = 0; i < length; i++) {
