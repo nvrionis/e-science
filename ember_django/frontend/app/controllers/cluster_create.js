@@ -736,8 +736,11 @@ App.ClusterCreateController = Ember.Controller.extend({
 			for (var i = 0; i < length; i++) {
 				elements[i].style.color = "initial";
 				var id = 'oozie_filter_' + this.get('oozie_filter');
-				var choice = document.getElementById(id);
-				choice.style.color = "white";
+				if (elements[i].id == id) {
+					var choice = document.getElementById(id);
+					choice.style.color = "white";
+				}
+
 			}
 		}
 	},
