@@ -87,7 +87,7 @@ App.ClusterCreateController = Ember.Controller.extend({
 	number_of_flavor_sizes : 3,
 	list_of_roles : ['master', 'slaves'], // Possible roles for vms
 	number_of_roles : 2,
-	oozie_filter : 'Off', //oozie filter intial status
+	workflow_filter: false, // workflow_filter initial status
 
 	// utility function takes String 'pattern' and numeric count
 	// and returns 'pattern' concatenated 'count' times.
@@ -186,23 +186,36 @@ App.ClusterCreateController = Ember.Controller.extend({
 
 	//Images available after filtering for oozie component if option is selected
 	images_available : function() {
+		var db_orka_images = [];
+		var pithos_orka_images = [];
+		var images = [];
 		if (this.get('no_project_selected')) {
 			return [];
 		}
-		if (this.get('oozie_filter') == 'On') {
-			var images = [];
-			for (var i = 0; i < this.get('content').objectAt(this.get('project_index')).get('os_choices').length; i++) {
-				for (var j = 0; j < this.get('orkaImages').objectAt(i).get('image_components').length; j++) {
-					if (this.get('orkaImages').objectAt(i).get('image_components').objectAt(j).name == 'Oozie') {
-						images.push(this.get('orkaImages').objectAt(i).get('image_name'));
+		pithos_orka_images = this.get('content').objectAt(this.get('project_index')).get('os_choices');
+		for (var i=0; i< this.get('orkaImages').length; i++){
+			db_orka_images.push(this.get('orkaImages').objectAt(i).get('image_name'));
+		}
+		if (this.get('workflow_filter') == true) {
+			for (var i = 0; i < pithos_orka_images.length; i++) {
+				for (var k=0; k< db_orka_images.length; k++){
+					if (pithos_orka_images[i]==db_orka_images[k]){
+						for (var j = 0; j < this.get('orkaImages').objectAt(k).get('image_components').length; j++) {
+							if (this.get('orkaImages').objectAt(i).get('image_components').objectAt(j).name == 'Oozie') {
+								images.push(this.get('orkaImages').objectAt(k).get('image_name'));
+							}
+						}
 					}
 				}
 			}
-			return images;
 		} else {
-			return this.get('content').objectAt(this.get('project_index')).get('os_choices');
+			images = pithos_orka_images;
 		}
-	}.property('oozie_filter', 'project_name'),
+		if (images.length == 0){
+			images.push('no images available');
+		}
+		return images;
+	}.property('workflow_filter', 'project_name'),
 
 	// The total cpus selected for the cluster
 	total_cpu_selection : function() {
@@ -379,7 +392,7 @@ App.ClusterCreateController = Ember.Controller.extend({
 			this.set('cluster_size_zero', true);
 		}
 		return max_cluster_size_limited_by_current_disks;
-	}.property('total_cpu_selection', 'total_ram_selection', 'total_disk_selection', 'disk_temp', 'cluster_size_var', 'cluster_size', 'project_details', 'oozie_filter'),
+	}.property('total_cpu_selection', 'total_ram_selection', 'total_disk_selection', 'disk_temp', 'cluster_size_var', 'cluster_size', 'project_details', 'workflow_filter'),
 
 	// Function to set master and slaves vm_flavor_selection
 	vm_flavor_buttons_response : function() {
@@ -725,26 +738,6 @@ App.ClusterCreateController = Ember.Controller.extend({
 		}
 	},
 
-	// Functionality about oozie_filter buttons being colored when user selects one of them
-	oozie_filter_buttons : function() {
-		var elements = document.getElementsByName("oozie_filter");
-		var length = elements.length;
-		if (length == 1) {
-			elements[0].style.color = "white";
-			this.set('oozie_filter', elements[0].value);
-		} else {
-			for (var i = 0; i < length; i++) {
-				elements[i].style.color = "initial";
-				var id = 'oozie_filter_' + this.get('oozie_filter');
-				if (elements[i].id == id) {
-					var choice = document.getElementById(id);
-					choice.style.color = "white";
-				}
-
-			}
-		}
-	},
-
 	// Function which call each button function
 	buttons : function() {
 		var insufficient_net_or_ip = !(Ember.isBlank(this.get('alert_mes_network')) && Ember.isBlank(this.get('alert_mes_float_ip')));
@@ -756,7 +749,6 @@ App.ClusterCreateController = Ember.Controller.extend({
 		this.disk_buttons();
 		this.storage_buttons();
 		this.vm_flavor_buttons();
-		this.oozie_filter_buttons();
 		if (insufficient_net_or_ip) {
 			this.get('disable_controls')(true);
 		}
@@ -779,7 +771,7 @@ App.ClusterCreateController = Ember.Controller.extend({
 		this.set('project_current', '');
 		this.set('project_name', '');
 		this.set('project_details', '');
-		this.set('oozie_filter', 'Off');
+		this.set('workflow_filter', false);
 	},
 
 	// Reset variables after logout
@@ -889,10 +881,6 @@ App.ClusterCreateController = Ember.Controller.extend({
 	},
 
 	actions : {
-		// action to enable dissable oozie filter
-		oozie_filter_selection : function(value, name) {
-			this.set('oozie_filter', value);
-		},
 		// action to focus project selection view
 		focus_project_selection : function() {
 			$('#project_id').focus();
@@ -908,7 +896,7 @@ App.ClusterCreateController = Ember.Controller.extend({
 			if (!Ember.isEmpty(this.get('last_cluster'))) {
 				// find and select the last project
 				var projects = [];
-				this.set('oozie_filter', 'Off');
+				this.set('workflow_filter', false);
 				projects = this.get('projects_av');
 				var length = projects.length;
 				for (var i = 0; i < length; i++) {
