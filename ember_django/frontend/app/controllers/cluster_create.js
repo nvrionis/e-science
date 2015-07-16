@@ -201,7 +201,7 @@ App.ClusterCreateController = Ember.Controller.extend({
 				for (var k=0; k< db_orka_images.length; k++){
 					if (pithos_orka_images[i]==db_orka_images[k]){
 						for (var j = 0; j < this.get('orkaImages').objectAt(k).get('image_components').length; j++) {
-							if (this.get('orkaImages').objectAt(i).get('image_components').objectAt(j).name == 'Oozie') {
+							if (this.get('orkaImages').objectAt(k).get('image_components').objectAt(j).name == 'Oozie') {
 								images.push(this.get('orkaImages').objectAt(k).get('image_name'));
 							}
 						}
