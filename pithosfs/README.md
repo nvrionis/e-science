@@ -57,16 +57,6 @@ The following properties are mandatory to add to the cluster's **core-site.xml**
 *The User Id (UUID) and token necessary for authentication can be found on [~okeanos](https://accounts.okeanos.grnet.gr/ui/api_access) under username and password.*
 ```xml
 <property>
-  <name>auth.pithos.uuid</name>
-  <value>abcdefgh-1234-1234-1234-placeholder1</value>
-  <description>User Id for ~okeanos</description>
-</property>
-<property>
-  <name>auth.pithos.token</name>
-  <value>abCDEfghIGKLmnOpQrSTuVWXyzplaceholder2</value>
- <description>~okeanos access token</description>
-</property>
-<property>
   <name>fs.pithos.impl</name>
   <value>gr.grnet.escience.fs.pithos.PithosFileSystem</value>
   <description>fqn of class</description>
