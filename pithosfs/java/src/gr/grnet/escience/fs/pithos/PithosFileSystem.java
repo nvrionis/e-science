@@ -182,7 +182,16 @@ public class PithosFileSystem extends FileSystem {
     		kamakirc.close();
     	}
     	catch (IOException e) {
-    		Utils.dbgPrint("initialize > /home/hduser/.kamakirc error: ", e);
+    		try (InputStream kamakirc = new FileInputStream(
+					"/var/lib/hadoop-hdfs/.kamakirc")) {
+				kamaki_info.load(kamakirc);
+				kamakirc.close();
+			} catch (IOException exc) {
+				Utils.dbgPrint(
+						"initialize > /home/hduser/.kamakirc error: ", e, 
+						"  and initialize > /var/lib/hadoop-hdfs/.kamakirc error: ",
+						exc);
+			}
     	}        
         this.uri = URI.create(uri.getScheme() + "://" + uri.getAuthority());
         setWorkingDirectory(new Path("/user", System.getProperty("user.name")));
