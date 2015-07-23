@@ -52,6 +52,7 @@ def db_after_login(token, login=True):
     """
     given_uuid = get_user_id(token)
     cached_user_name = get_user_name(token)
+   #nikos masked_token = mask_token('encrypt_key', token)
     try:
         existing_user = UserInfo.objects.get(uuid=given_uuid)
         logging.info(' The id of the user %s is %d', existing_user.uuid,
@@ -61,6 +62,8 @@ def db_after_login(token, login=True):
             db_login_entry(existing_user)
         if existing_user.okeanos_token != token:
             existing_user.okeanos_token = token
+   #nikos     if existing_user.okeanos_token != masked_token:
+   #nikos         existing_user.okeanos_token = masked_token
             existing_user.save()
         if existing_user.user_name != cached_user_name:
             existing_user.user_name = cached_user_name
@@ -70,6 +73,7 @@ def db_after_login(token, login=True):
     except ObjectDoesNotExist:
         # new user database entry
         new_entry = UserInfo.objects.create(uuid=given_uuid, okeanos_token=token, user_name=cached_user_name)
+     #nikos   new_entry = UserInfo.objects.create(uuid=given_uuid, okeanos_token=masked_token, user_name=cached_user_name)
         new_token = Token.objects.create(user=new_entry)
         new_user = UserInfo.objects.get(uuid=given_uuid)
         logging.info(' The id of the new user is '+ str(new_user.user_id))
