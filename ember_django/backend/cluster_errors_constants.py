@@ -7,7 +7,7 @@ This module contains the definitions of returned errors and package constants.
 @author: Ioannis Stenos, Nick Vrionis
 """
 import os
-import base64 #nikos
+import base64 #encrypt token
 
 # Definitions of return value errors
 error_syntax_clustersize = -1
@@ -97,7 +97,7 @@ hadoop_images_ansible_tags = {"hadoopbase": {"stop": "stop", "start": "start"},
                                             "stop": "stop,ECOSYSTEMstop,HUEstop"},
                               "cloudera": {"start": "start,CLOUDstart", "stop": "stop,CLOUDstop"}}
 
-#nikos{
+#encrypt decrypt token
 def mask_token(key, token):
     enc = []
     for i in range(len(token)):
@@ -114,4 +114,3 @@ def unmask_token(key, masked_token):
         dec_c = chr((256 + ord(masked_token[i]) - ord(key_c)) % 256)
         dec.append(dec_c)
     return "".join(dec)
-#nikos}
