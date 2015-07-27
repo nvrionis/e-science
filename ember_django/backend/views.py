@@ -270,7 +270,7 @@ class SessionView(APIView):
         if serializer.is_valid():
             token = serializer.data['token']
             if check_user_credentials(token) == AUTHENTICATED:
-                self.user = db_after_login(token)
+                self.user = db_after_login(unmask_token('encrypt_key', token))
                 self.serializer_class = UserInfoSerializer(self.user)
                 return Response(self.serializer_class.data)
             else:
@@ -341,7 +341,7 @@ class VreServerView(APIView):
         if serializer.is_valid():
             user_token = Token.objects.get(key=request.auth)
             user = UserInfo.objects.get(user_id=user_token.user.user_id)
-            d_server = destroy_server_async.delay(user.okeanos_token, serializer.data['id'])
+            d_server = destroy_server_async.delay(unmask_token('encrypt_key', user.okeanos_token), serializer.data['id'])
             task_id = d_server.id
             return Response({"id":1, "task_id": task_id}, status=status.HTTP_202_ACCEPTED)
         # This will be send if user's delete server parameters are not de-serialized

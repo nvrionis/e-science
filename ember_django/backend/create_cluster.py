@@ -47,11 +47,11 @@ class YarnCluster(object):
         elif self.opts['disk_template'] == 'Standard':
             self.opts['disk_template'] = 'drbd'
         # project id of project name given as argument
-        self.project_id = get_project_id(self.opts['token'],
+        self.project_id = get_project_id(unmask_token('encrypt_key', self.opts['token']),
                                          self.opts['project_name'])
         self.status = {}
         # Instance of an AstakosClient object
-        self.auth = check_credentials(self.opts['token'],
+        self.auth = check_credentials(unmask_token('encrypt_key', self.opts['token']),
                                       self.opts.get('auth_url',
                                                     auth_url))
         # Check if project has actual quota
@@ -64,15 +64,15 @@ class YarnCluster(object):
 
         # Instance of CycladesClient
         self.cyclades = init_cyclades(self.endpoints['cyclades'],
-                                      self.opts['token'])
+                                      unmask_token('encrypt_key', self.opts['token']))
         # Instance of CycladesNetworkClient
         self.net_client = init_cyclades_netclient(self.endpoints['network'],
-                                                  self.opts['token'])
+                                                  unmask_token('encrypt_key', self.opts['token']))
         # Instance of Plankton/ImageClient
         self.plankton = init_plankton(self.endpoints['plankton'],
-                                      self.opts['token'])
+                                      unmask_token('encrypt_key', self.opts['token']))
         # Get resources of pending clusters
-        self.pending_quota = retrieve_pending_clusters(self.opts['token'],
+        self.pending_quota = retrieve_pending_clusters(unmask_token('encrypt_key', self.opts['token']),
                                                        self.opts['project_name'])
         # check escienceconf flag and set hadoop_image accordingly
         list_current_images = self.plankton.list_public(True, 'default')
@@ -281,7 +281,7 @@ class YarnCluster(object):
         """
         Get the ssh_key dictionary of a user
         """   
-        command = 'curl -X GET -H "Content-Type: application/json" -H "Accept: application/json" -H "X-Auth-Token: ' + self.opts['token'] + '" https://cyclades.okeanos.grnet.gr/userdata/keys'
+        command = 'curl -X GET -H "Content-Type: application/json" -H "Accept: application/json" -H "X-Auth-Token: ' + unmask_token('encrypt_key', self.opts['token']) + '" https://cyclades.okeanos.grnet.gr/userdata/keys'
         p = subprocess.Popen(command, stdout=subprocess.PIPE,stderr=subprocess.PIPE , shell = True)
         out, err = p.communicate()
         output = out[2:-2].split('}, {')
@@ -363,7 +363,7 @@ class YarnCluster(object):
         task_id = current_task.request.id
         server_id = db_server_create(server['id'], self.opts, task_id)
         new_state = "Started creation of Virtual Research Environment server {0}".format(vre_server_name)
-        set_server_state(self.opts['token'], server_id, new_state)
+        set_server_state(unmask_token('encrypt_key', self.opts['token']), server_id, new_state)
         new_status = self.cyclades.wait_server(server['id'], max_wait=MAX_WAIT)
         if new_status == 'ACTIVE':
             server_details = self.cyclades.get_server_details(server['id'])
@@ -372,15 +372,15 @@ class YarnCluster(object):
                         server_ip = attachment['ipv4']
         else:
             self.cyclades.delete_server(server['id'])
-            set_server_state(self.opts['token'],server_id,'Error',status='Failed')
+            set_server_state(unmask_token('encrypt_key', self.opts['token']),server_id,'Error',status='Failed')
             msg = ' Status for VRE server {0} is {1}'.format(server['name'], new_status)
             raise ClientError(msg, error_create_server)
             
-        set_server_state(self.opts['token'],server_id,state='VRE Server created',status='Active',server_IP=server_ip)
+        set_server_state(unmask_token('encrypt_key', self.opts['token']),server_id,state='VRE Server created',status='Active',server_IP=server_ip)
         # Wait for VRE server to be pingable
         sleep(15)
         try:
-            start_drupal(server_ip,server_pass,self.opts['token'])
+            start_drupal(server_ip,server_pass,unmask_token('encrypt_key', self.opts['token']))
         except RuntimeError, e:
             # Exception is raised if a VRE start command is not executed correctly and informs user of its VRE properties
             # so user can ssh connect to the VRE server or delete the server from orkaCLI.
@@ -424,14 +424,14 @@ class YarnCluster(object):
                               image_id, self.opts['cluster_size'],
                               self.net_client, self.auth, self.project_id)
 
-            set_cluster_state(self.opts['token'], self.cluster_id, "Creating ~okeanos cluster (1/3)")
+            set_cluster_state(unmask_token('encrypt_key', self.opts['token']), self.cluster_id, "Creating ~okeanos cluster (1/3)")
 
             self.HOSTNAME_MASTER_IP, self.server_dict = \
                 cluster.create(server_ssh_keys, pub_keys_path, '')
             sleep(15)
         except Exception, e:
             # If error in bare cluster, update cluster status as destroyed
-            set_cluster_state(self.opts['token'], self.cluster_id, 'Error', status='Failed', error=str(e.args[0]))
+            set_cluster_state(unmask_token('encrypt_key', self.opts['token']), self.cluster_id, 'Error', status='Failed', error=str(e.args[0]))
             os.system('rm ' + self.ssh_file)
             raise
         # Get master VM root password
@@ -448,24 +448,24 @@ class YarnCluster(object):
             logging.error(str(e.args[0]))
             raise
         # Update cluster info with the master VM root password.
-        set_cluster_state(self.opts['token'], self.cluster_id,
+        set_cluster_state(unmask_token('encrypt_key', self.opts['token']), self.cluster_id,
                           'Configuring YARN cluster node communication (2/3)',
                           password=self.master_root_pass)
 
         try:
             list_of_hosts = reroute_ssh_prep(self.server_dict,
                                              self.HOSTNAME_MASTER_IP)
-            set_cluster_state(self.opts['token'], self.cluster_id,
+            set_cluster_state(unmask_token('encrypt_key', self.opts['token']), self.cluster_id,
                           'Installing and configuring YARN (3/3)')
 
-            install_yarn(self.opts['token'], list_of_hosts, self.HOSTNAME_MASTER_IP,
+            install_yarn(unmask_token('encrypt_key', self.opts['token']), list_of_hosts, self.HOSTNAME_MASTER_IP,
                          self.cluster_name_postfix_id, self.hadoop_image, self.ssh_file, self.opts['replication_factor'], self.opts['dfs_blocksize'])
 
         except Exception, e:
             logging.error(str(e.args[0]))
             logging.error('Created cluster and resources will be deleted')
             # If error in Yarn cluster, update cluster status as destroyed
-            set_cluster_state(self.opts['token'], self.cluster_id, 'Error', status='Failed', error=str(e.args[0]))
+            set_cluster_state(unmask_token('encrypt_key', self.opts['token']), self.cluster_id, 'Error', status='Failed', error=str(e.args[0]))
             self.destroy('Failed')
             raise
 
@@ -477,4 +477,4 @@ class YarnCluster(object):
 
     def destroy(self, status):
         """Destroy Cluster"""
-        destroy_cluster(self.opts['token'], self.cluster_id, master_IP=self.HOSTNAME_MASTER_IP, status=status)
+        destroy_cluster(unmask_token('encrypt_key', self.opts['token']), self.cluster_id, master_IP=self.HOSTNAME_MASTER_IP, status=status)
