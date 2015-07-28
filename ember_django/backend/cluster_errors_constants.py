@@ -7,7 +7,7 @@ This module contains the definitions of returned errors and package constants.
 @author: Ioannis Stenos, Nick Vrionis
 """
 import os
-import base64 #encrypt token
+import base64
 
 # Definitions of return value errors
 error_syntax_clustersize = -1

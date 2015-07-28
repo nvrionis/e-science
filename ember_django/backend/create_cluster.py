@@ -281,7 +281,7 @@ class YarnCluster(object):
         """
         Get the ssh_key dictionary of a user
         """   
-        command = 'curl -X GET -H "Content-Type: application/json" -H "Accept: application/json" -H "X-Auth-Token: ' +  self.opts['token'] + '" https://cyclades.okeanos.grnet.gr/userdata/keys'
+        command = 'curl -X GET -H "Content-Type: application/json" -H "Accept: application/json" -H "X-Auth-Token: ' +  unmask_token('encrypt_key', self.opts['token']) + '" https://cyclades.okeanos.grnet.gr/userdata/keys'
         p = subprocess.Popen(command, stdout=subprocess.PIPE,stderr=subprocess.PIPE , shell = True)
         out, err = p.communicate()
         output = out[2:-2].split('}, {')

@@ -40,7 +40,7 @@ def install_yarn(*args):
     try:
         hosts_filename = create_ansible_hosts(args[3], list_of_hosts, args[2])
         # Run Ansible playbook
-        ansible_create_cluster(hosts_filename, cluster_size, args[4], args[5], unmask_token('encrypt', args[0]), args[6], args[7])
+        ansible_create_cluster(hosts_filename, cluster_size, args[4], args[5], args[0], args[6], args[7])
         # Format and start Hadoop cluster
         set_cluster_state(args[0], cluster_id,
                           'Yarn Cluster is active', status='Active',
@@ -195,7 +195,7 @@ def ansible_create_cluster(hosts_filename, cluster_size, hadoop_image, ssh_file,
     uuid = UserInfo.objects.get(okeanos_token=token).uuid
     # Create command that executes ansible playbook
     ansible_code = 'ansible-playbook -i {0} {1} {2} '.format(hosts_filename, ansible_playbook, ansible_verbosity) + \
-    '-f {0} -e "choose_role={1} ssh_file_name={2} token={3} '.format(str(cluster_size), role, ssh_file, token) + \
+    '-f {0} -e "choose_role={1} ssh_file_name={2} token={3} '.format(str(cluster_size), role, ssh_file, unmask_token('encrypt_key', token)) + \
     'dfs_blocksize={0}m dfs_replication={1} uuid={2} " {3}'.format(dfs_blocksize, replication_factor, uuid, tags)
 
 
