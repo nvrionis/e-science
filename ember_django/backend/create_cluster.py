@@ -72,7 +72,7 @@ class YarnCluster(object):
         self.plankton = init_plankton(self.endpoints['plankton'],
                                       unmask_token('encrypt_key', self.opts['token']))
         # Get resources of pending clusters
-        self.pending_quota = retrieve_pending_clusters(self.opts['token'],
+        self.pending_quota = retrieve_pending_clusters(unmask_token('encrypt_key', self.opts['token']),
                                                        self.opts['project_name'])
         # check escienceconf flag and set hadoop_image accordingly
         list_current_images = self.plankton.list_public(True, 'default')
