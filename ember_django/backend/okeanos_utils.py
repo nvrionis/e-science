@@ -250,19 +250,13 @@ def destroy_cluster(token, cluster_id, master_IP='', status='Destroyed'):
 def check_credentials(token, auth_url=auth_url):
     """Identity,Account/Astakos. Test authentication credentials"""
     logging.log(REPORT, ' Test the credentials')
-    unmasked_token = unmask_token('encrypt_key', token) #decrypt token
     try:
         auth = AstakosClient(auth_url, token)
         auth.authenticate()
-	#decrypt token
-    except token_error:
-        try:
-            auth = AstakosClient(auth_url, unmasked_token)
-            auth.authenticate()
-        except ClientError:
-            msg = ' Authentication failed with url %s and token %s and unmasked token %s'\
-                % (auth_url, token, unmasked_token)
-            raise ClientError(msg, error_authentication)
+    except ClientError:
+        msg = ' Authentication failed with url %s and token %s'\
+            % (auth_url, token)
+        raise ClientError(msg, error_authentication)
     return auth
 
 

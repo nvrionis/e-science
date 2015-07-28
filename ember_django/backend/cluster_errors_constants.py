@@ -108,7 +108,7 @@ def mask_token(key, token):
 
 def unmask_token(key, masked_token):
     dec = []
-    masked_token = base64.urlsafe_b64decode(masked_token)
+    masked_token = base64.urlsafe_b64decode(masked_token.encode('ascii'))
     for i in range(len(masked_token)):
         key_c = key[i % len(key)]
         dec_c = chr((256 + ord(masked_token[i]) - ord(key_c)) % 256)

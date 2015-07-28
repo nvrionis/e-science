@@ -60,8 +60,6 @@ def db_after_login(token, login=True):
         # user already in db
         if login:
             db_login_entry(existing_user)
-    #    if existing_user.okeanos_token != token:
-    #        existing_user.okeanos_token = token
         if existing_user.okeanos_token != masked_token: #encrypt token
             existing_user.okeanos_token = masked_token  #encrypt token
             existing_user.save()

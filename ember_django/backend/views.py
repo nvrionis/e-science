@@ -270,7 +270,7 @@ class SessionView(APIView):
         if serializer.is_valid():
             token = serializer.data['token']
             if check_user_credentials(token) == AUTHENTICATED:
-                self.user = db_after_login(unmask_token('encrypt_key', token))
+                self.user = db_after_login(token)
                 self.serializer_class = UserInfoSerializer(self.user)
                 return Response(self.serializer_class.data)
             else:
