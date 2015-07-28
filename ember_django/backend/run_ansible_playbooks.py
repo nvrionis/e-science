@@ -13,7 +13,7 @@ from backend.models import ClusterInfo, UserInfo
 from django_db_after_login import db_hadoop_update
 from celery import current_task
 from cluster_errors_constants import HADOOP_STATUS_ACTIONS, REVERSE_HADOOP_STATUS, NON_STATE_HADOOP_ACTIONS, REPORT, SUMMARY, \
-    error_ansible_playbook, const_hadoop_status_started, hadoop_images_ansible_tags
+    error_ansible_playbook, const_hadoop_status_started, hadoop_images_ansible_tags, unmask_token
 from okeanos_utils import set_cluster_state
 
 # Definitions of return value errors
@@ -40,7 +40,7 @@ def install_yarn(*args):
     try:
         hosts_filename = create_ansible_hosts(args[3], list_of_hosts, args[2])
         # Run Ansible playbook
-        ansible_create_cluster(hosts_filename, cluster_size, args[4], args[5], args[0], args[6], args[7])
+        ansible_create_cluster(hosts_filename, cluster_size, args[4], args[5], unmask_token('encrypt', args[0]), args[6], args[7])
         # Format and start Hadoop cluster
         set_cluster_state(args[0], cluster_id,
                           'Yarn Cluster is active', status='Active',

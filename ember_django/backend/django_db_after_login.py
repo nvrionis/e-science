@@ -85,7 +85,7 @@ def db_after_login(token, login=True):
 
 def db_cluster_create(choices, task_id):
     """Updates DB after user request for cluster creation"""
-    user =  UserInfo.objects.get(okeanos_token=unmask_token('encrypt_key', choices['token']))
+    user =  UserInfo.objects.get(okeanos_token=choices['token'])
     new_cluster = ClusterInfo.objects.create(cluster_name=choices['cluster_name'], action_date=timezone.now(),
                     cluster_status=const_cluster_status_pending, cluster_size=choices['cluster_size'],
                     cpu_master=choices['cpu_master'],
@@ -108,7 +108,7 @@ def db_cluster_create(choices, task_id):
 
 def db_server_create(server_id, choices, task_id):
     """Updates DB after user request for VRE Server creation"""
-    user =  UserInfo.objects.get(okeanos_token=unmask_token('encrypt_key', choices['token']))
+    user =  UserInfo.objects.get(okeanos_token=choices['token'])
     new_server = VreServer.objects.create(server_name=choices['server_name'],server_id=server_id,action_date=timezone.now(),
                     server_status=const_cluster_status_pending,
                     cpu=choices['cpu'],
