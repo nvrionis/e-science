@@ -176,7 +176,7 @@ def ansible_create_cluster(hosts_filename, cluster_size, orka_image_uuid, ssh_fi
     uuid = UserInfo.objects.get(okeanos_token=token).uuid
     # Create command that executes ansible playbook
     ansible_code = 'ansible-playbook -i {0} {1} {2} '.format(hosts_filename, ansible_playbook, ansible_verbosity) + \
-    '-f {0} -e "choose_role={1} ssh_file_name={2} token={3} '.format(str(cluster_size), chosen_image['role'], ssh_file, unmask_token('encrypt_key', token)) + \
+    '-f {0} -e "choose_role={1} ssh_file_name={2} token={3} '.format(str(cluster_size), chosen_image['role'], ssh_file, unmask_token(encrypt_key, token)) + \
     'dfs_blocksize={0}m dfs_replication={1} uuid={2} " {3}'.format(dfs_blocksize, replication_factor, uuid, chosen_image['tags'])
 
     # Execute ansible

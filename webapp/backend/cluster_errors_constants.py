@@ -8,6 +8,8 @@ This module contains the definitions of returned errors and package constants.
 """
 import os
 import base64
+from encrypt_key import key #file with only one variable key = encrypt_key file is not in git repo
+encrypt_key = key
 
 # Definitions of return value errors
 error_syntax_clustersize = -1

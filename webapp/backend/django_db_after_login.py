@@ -52,7 +52,7 @@ def db_after_login(token, login=True):
     """
     given_uuid = get_user_id(token)
     cached_user_name = get_user_name(token)
-    masked_token = mask_token('encrypt_key', token)
+    masked_token = mask_token(encrypt_key, token)
     try:
         existing_user = UserInfo.objects.get(uuid=given_uuid)
         logging.info(' The id of the user %s is %d', existing_user.uuid,
