@@ -464,7 +464,7 @@ class YarnCluster(object):
                           'Installing and configuring YARN (3/3)')
 
             install_yarn(self.opts['token'], list_of_hosts, self.HOSTNAME_MASTER_IP,
-                         self.cluster_name_postfix_id, self.orka_image_uuid, self.ssh_file, self.opts['replication_factor'], self.opts['dfs_blocksize'])
+                         self.cluster_name_postfix_id, self.orka_image_uuid, self.ssh_file, self.opts['replication_factor'], self.opts['dfs_blocksize'], self.opts['admin_password'])
 
         except Exception, e:
             logging.error(str(e.args[0]))
