@@ -80,6 +80,8 @@ Optional arguments for create command:
 (available images can be found with **orka images** command)
     --replication_factor="HDFS replication factor. Default is 2",
     --dfs_blocksize="HDFS block size (in MB). Default is 128",
+    --admin_password="Password for hue first login for superuser. Deafault is random generated."
+ **admin_password must contain only uppercase and lowercase letters and numbers and be at least eight characters long**.
 
 ### Create Hadoop cluster from a pre-configured image
 
