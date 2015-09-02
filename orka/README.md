@@ -80,8 +80,6 @@ Optional arguments for create command:
 (available images can be found with **orka images** command)
     --replication_factor="HDFS replication factor. Default is 2",
     --dfs_blocksize="HDFS block size (in MB). Default is 128",
-    --admin_password="Password for hue first login for superuser. Deafault is random generated."
- **admin_password must contain only uppercase and lowercase letters and numbers and be at least eight characters long**.
 
 ### Create Hadoop cluster from a pre-configured image
 
@@ -153,28 +151,6 @@ Required positional arguments for destroy command:
 example for destroy cluster:
 
     orka destroy <cluster_id>
-
-## "node" command
-
-orka node command provides sub-commands for adding or deleting a node to/from a Hadoop-Yarn cluster.
-
-### "node add" command
-
-Required positional arguments for create command:
-         
-    cluster_id: "Cluster id in e-science database"
-    cpu: "number of CPU cores for server"
-    ram: "ram in MB"
-    disk: "hard drive in GB"
-(cluster_id can be found with **orka list** command)
-
-Ram should not be lower than the memory which is preconfigured in hadoop xml files of the cluster that the node will be added.
-
-####{orka node add} command example
-
-example for adding node to a cluster:
-
-    orka node add <cluster_id> 2 2048 10
 
 ##"file" command
 
