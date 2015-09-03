@@ -50,6 +50,16 @@ class _ArgCheck(object):
         if ival <= 0:
             raise ArgumentTypeError(" %s must be a positive number." % val)
         return ival
+    
+    def greater_than_min_vre_ram_is(self, val):
+        """
+        :param val: int
+        :return: val if >= 1024 or raise exception
+        """
+        ival = int(val)
+        if ival < vre_ram_min:
+            raise ArgumentTypeError(" %s must be at least 1024 MiB for VRE servers, except for DSpace (2048 MiB)" % val)
+        return ival
 
     def two_or_larger_is(self, val):
         """
@@ -151,6 +161,9 @@ class HadoopCluster(object):
     
     def create_vre_machine(self):
         """ Method for creating VRE server in~okeanos."""
+        if 'dspace' in self.opts['image'].lower() and self.opts['ram'] < dspace_ram_min:
+            logging.error('Memory should be at least 2048 MiB for {0} image.'.format(self.opts['image']))
+            exit(error_fatal)
         try:
             payload = {"vreserver":{"project_name": self.opts['project_name'], "server_name": self.opts['name'],
                                         "cpu": self.opts['cpu'], "ram": self.opts['ram'],
@@ -166,10 +179,10 @@ class HadoopCluster(object):
             result = task_message(task_id, self.escience_token, self.server_url, wait_timer_create)
             logging.log(SUMMARY, "VRE server is active and has the following properties:")
             stdout.write("server_id: {0}\nserver_IP: {1}\n"
-                         "root password: {2}\nadmin password for login: {3}\n".format(result['server_id'], result['server_IP'],
-                                                        result['VRE_VM_password'], self.opts['admin_password']))
+                         "VM's root password: {2}\nAdmin password for {3} login: {4}\n".format(result['server_id'], result['server_IP'],
+                                                        result['VRE_VM_password'], filter(lambda l: l.isalpha(), self.opts['image']), self.opts['admin_password']))
             if 'dspace' in self.opts['image'].lower():
-                stdout.write("The admin email used for login is {0}\n".format(self.opts['admin_email']))
+                stdout.write("The admin email used for login in {0} is {1}\n".format(filter(lambda l: l.isalpha(), self.opts['image']), self.opts['admin_email']))
             exit(SUCCESS)
 
         except Exception, e:
@@ -271,6 +284,52 @@ class HadoopCluster(object):
             logging.error(str(e.args[0]))
             exit(error_fatal)
             
+            
+    def node_action(self):
+        """ Method for taking node actions in a Hadoop cluster in~okeanos."""
+        opt_addnode = self.opts.get('addnode', False)
+        opt_removenode = self.opts.get('removenode', False)
+        
+        clusters = get_user_clusters(self.opts['token'], self.opts['server_url'])
+        for cluster in clusters:
+            if ((cluster['id'] == self.opts['cluster_id'])):
+                if cluster['cluster_status'] == const_cluster_status_active:
+                    if opt_removenode == True:
+                        if int(cluster['cluster_size']) == int(cluster['replication_factor']) +1:
+                            print "Limited resources. Cannot remove node."
+                            exit(error_remove_node)
+                        else:
+                            print "Removing node"
+                            new_cluster_size = int(cluster['cluster_size'])-1
+                    elif opt_addnode == True:
+                        print "Adding node"
+                        new_cluster_size = int(cluster['cluster_size'])+1
+                    else:
+                        break
+                    try:
+                        payload = {"clusterchoice":{ 
+                                    'cluster_edit': self.opts['cluster_id'],
+                                    'cluster_size': new_cluster_size
+                                    }}
+                        yarn_cluster_req = ClusterRequest(self.escience_token, self.server_url, 
+                                                          payload, action='cluster')
+                        response = yarn_cluster_req.create_cluster()
+                        if 'task_id' in response['clusterchoice']:
+                            task_id = response['clusterchoice']['task_id']
+                        else:
+                            logging.error(response['clusterchoice']['message'])
+                            exit(error_fatal)
+                        result = task_message(task_id, self.escience_token, self.server_url, 
+                                             wait_timer_create)
+                        exit(SUCCESS)
+                    except Exception, e:
+                        stderr.write('{0}'.format('\r'))
+                        logging.error(str(e.args[0]))
+                        exit(error_fatal)
+                else:
+                    logging.error('You can take node actions only in an active cluster.')
+                    exit(error_fatal)
+
 
     def hadoop_action(self):
         """ Method for applying an action to a Hadoop cluster"""
@@ -780,6 +839,8 @@ def main():
     parser_destroy = orka_subparsers.add_parser('destroy', parents=[common_parser],
                                      help='Destroy a Hadoop-Yarn cluster'
                                      ' on ~okeanos.')
+    parser_node = orka_subparsers.add_parser('node', parents=[common_parser],
+                                     help='Operations on a Hadoop-Yarn cluster for adding or deleting a node.')
     parser_list = orka_subparsers.add_parser('list', parents=[common_parser],
                                      help='List user clusters.')
     parser_info = orka_subparsers.add_parser('info', parents=[common_parser],
@@ -799,6 +860,11 @@ def main():
                                      help='Get/Download a file from the Hadoop-Yarn filesystem to <destination>.')
     parser_file_list = file_subparsers.add_parser('list',
                                              help='List pithos+ files.')
+    parser_node_subparsers = parser_node.add_subparsers(help='Choose node action add or delete')
+    parser_addnode = parser_node_subparsers.add_parser('add',
+                                                       help='Add a node in a Hadoop-Yarn cluster on ~okeanos.')
+    parser_removenode = parser_node_subparsers.add_parser('remove',
+                                                          help='Remove a node from a Hadoop-Yarn cluster on ~okeanos.')
     
     if len(argv) > 1:
         
@@ -839,8 +905,8 @@ def main():
         parser_vre_create.add_argument('--foo', nargs="?", help=SUPPRESS, default=True, dest='vre_create')
         parser_vre_create.add_argument("cpu", help='Number of CPU cores for VRE server',
                                    type=checker.positive_num_is)
-        parser_vre_create.add_argument("ram", help='Size of RAM (MB) for VRE server',
-                                   type=checker.positive_num_is)
+        parser_vre_create.add_argument("ram", help='Size of RAM (MB) for VRE servers must be at least 1024 MiB, except for DSpace (2048 MiB)',
+                                   type=checker.greater_than_min_vre_ram_is)
     
         parser_vre_create.add_argument("disk", help='Disk size (GB) for VRE server',
                                    type=checker.five_or_larger_is)
@@ -852,15 +918,27 @@ def main():
         parser_vre_create.add_argument("image", help='OS for the VRE server.', metavar='image')
         parser_vre_create.add_argument("--admin_password", metavar='admin_password', default=auto_generated_pass, type=checker.valid_admin_password_is,
                               help='Admin password for VRE servers. Default is auto-generated')
-        parser_vre_create.add_argument("--admin_email", metavar='admin_email', default='admin@dspace.gr', type=checker.a_string_is,
-                              help='Admin email for VRE DSpace image. Default is admin@dspace.gr')
+        parser_vre_create.add_argument("--admin_email", metavar='admin_email', default='admin@example.com', type=checker.a_string_is,
+                              help='Admin email for VRE DSpace image. Default is admin@example.com')
         
         
         parser_vre_destroy.add_argument('--foo', nargs="?", help=SUPPRESS, default=True, dest='vre_destroy')
         
         parser_vre_destroy.add_argument('server_id',
                               help='The id of a VRE server', type=checker.positive_num_is)
-     
+        
+        # hidden argument with default value so we can set opts['addnode'] 
+        # when ANY 'orka node add' command is invoked
+        parser_addnode.add_argument('--foo', nargs="?", help=SUPPRESS, default=True, dest='addnode')
+        parser_addnode.add_argument('cluster_id', help='The id of the Hadoop cluster where the node will be added',
+                                   type=checker.positive_num_is)
+        
+        # hidden argument with default value so we can set opts['removenode'] 
+        # when ANY 'orka node remove' command is invoked
+        parser_removenode.add_argument('--foo', nargs="?", help=SUPPRESS, default=True, dest='removenode')
+        parser_removenode.add_argument('cluster_id', help='The id of the Hadoop cluster', 
+                                       type=checker.positive_num_is)
+
         parser_list.add_argument('--status', help='Filter by status ({%(choices)s})'
                               ' Default is all: no filtering.', type=str.upper,
                               metavar='status', choices=['ACTIVE','DESTROYED','PENDING'])
@@ -950,6 +1028,8 @@ def main():
                 c_imagesinfo.list_images('vre')
             else:
                 c_hadoopcluster.vre_action()
+        elif verb == 'node':
+            c_hadoopcluster.node_action()
 
     else:
         logging.error('No arguments were given')
