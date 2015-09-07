@@ -46,6 +46,10 @@ App.Uservreserver = DS.Model.extend({
         // Return url with helpful info for setting up email port inside ~okeanos
         return 'https://okeanos.grnet.gr/support/faq/cyclades-why-is-port-x-closed-is-it-blocked-by-design/';
     }.property('os_image'),
+    vre_readme_url: function(){
+        // Return url with helpful info for docker operations in VRE servers
+        return 'https://github.com/ioannisstenos/e-science/blob/es458/orka/VRE_README.md';
+    }.property('os_image'),
     vre_access_url : function(){
         // TODO: add to components info and resolve dynamically
         var image = this.get('os_image');
@@ -292,6 +296,11 @@ App.Usercluster = DS.Model.extend({
 			return '';
 		}
 	}.property('cluster_status'),
+	cluster_manage_enabled : function(){
+	   var disabled = ['DESTROYED','FAILED'];
+	   var status_verbose = this.get('cluster_status_verbose');
+	   return !disabled.contains(status_verbose);	   
+	}.property('cluster_status_verbose'),
 	cluster_status_active : function(){
 		var status = this.get('cluster_status');
 		if (status == '1'){
@@ -341,7 +350,7 @@ App.Usercluster = DS.Model.extend({
 		var status = this.get('hadoop_status');
 		var cluster_status = this.get('cluster_status');
 		if (cluster_status !== "1"){
-			status = "0";
+			return true;
 		}
 		switch (status){
 		case "0":
@@ -356,7 +365,7 @@ App.Usercluster = DS.Model.extend({
 		var status = this.get('hadoop_status');
 		var cluster_status = this.get('cluster_status');
 		if (cluster_status !== "1"){
-			status = "0";
+			return true;
 		}
 		switch (status){
 		case "1":
@@ -371,7 +380,7 @@ App.Usercluster = DS.Model.extend({
 		var status = this.get('hadoop_status');
 		var cluster_status = this.get('cluster_status');
 		if (cluster_status !== "1"){
-			status = "0";
+			return true;
 		}
 		switch (status){
 		case "0":

@@ -133,11 +133,10 @@ def get_public_ip_id(cyclades_network_client,float_ip):
         if ip['floating_ip_address'] == float_ip:
             return ip
 
-
-'''
-Work in progress
-
-def add_node():
+def cluster_add_node(token, cluster_id):
+    """
+    Create VM with options and attach node to cluster with cluster_id
+    """
     cluster_to_edit = ClusterInfo.objects.get(id=cluster_id)
 
     endpoints, user_id = endpoints_and_user_id(auth)
@@ -179,8 +178,8 @@ def add_node():
     if not chosen_image:
         msg = ' Image not found.'
         raise ClientError(msg, error_image_id)
-   
-    cyclades.create_server( node_name, flavor_id, chosen_image['id'], personality=personality(), project_id)
+    
+    cyclades.create_server(node_name, flavor_id, chosen_image_id, personality=personality(), project_id=project_id)
    
     master_id = None
     network_to_edit_id = None
@@ -196,9 +195,15 @@ def add_node():
            break  
 #    port_details = self.nc.create_port(network_to_edit_id,new_server['id'])
 
-'''
 
-def scale_cluster(token, cluster_id, cluster_delta, status='Undefined'):
+def cluster_remove_node(token, cluster_id, node_id, status):
+    """
+    Detach node with node_id from cluster and delete VM
+    """
+    state = "Deleting Node VM %s from cluster %s" % (node_id, cluster_to_scale.cluster_name)
+    set_cluster_state(token, cluster_id, state, status='Pending')
+
+def scale_cluster(token, cluster_id, cluster_delta, status='Pending'):
     """
     Scales an active cluster by cluster_delta (signed int).
     For scaling up finds the cluster settings and highest internal ip/port slave
@@ -208,6 +213,7 @@ def scale_cluster(token, cluster_id, cluster_delta, status='Undefined'):
     current_task.update_state(state="Started")
     cluster_to_scale = ClusterInfo.objects.get(id=cluster_id)
     previous_cluster_status = cluster_to_scale.cluster_status
+    status_map = {"0":"Destroyed","1":"Active","2":"Pending","3":"Failed"}
     auth = check_credentials(unmask_token(encrypt_key,token))
     current_task.update_state(state="Authenticated")
     endpoints, user_id = endpoints_and_user_id(auth)
@@ -223,8 +229,7 @@ def scale_cluster(token, cluster_id, cluster_delta, status='Undefined'):
             state = "Decommissioning Node %s from Hadoop (ansible)" % -counter
             set_cluster_state(token, cluster_id, state, status=status)
             sleep(refresh_timer)
-            state = "Deleting Node VM %s from cluster %s" % (-counter, cluster_to_scale.cluster_name)
-            set_cluster_state(token, cluster_id, state, status=status)
+            cluster_remove_node(token, cluster_id, -counter, status_map[previous_cluster_status])
     elif cluster_delta > 0: # scale up
         # TODO: 1. Create VM > attach to cluster + update metadata on DB 2. Ansible to add datanode to hadoop
         for counter in range(1,cluster_delta+1):
@@ -236,7 +241,7 @@ def scale_cluster(token, cluster_id, cluster_delta, status='Undefined'):
             set_cluster_state(token, cluster_id, state, status=status)
     sleep(refresh_timer)
     state = 'DONE: Scaled cluster %s' % cluster_to_scale.cluster_name
-    set_cluster_state(token, cluster_id, state, previous_cluster_status)
+    set_cluster_state(token, cluster_id, state, status=status_map[previous_cluster_status])
     return cluster_to_scale.cluster_name
     
 def destroy_cluster(token, cluster_id, master_IP='', status='Destroyed'):
