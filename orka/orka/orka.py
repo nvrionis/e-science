@@ -945,6 +945,13 @@ def main():
         parser_vre_list.add_argument('--verbose', help='List extra Virtual Research Environment server details.',
                               action="store_true")
         
+
+        # hidden argument with default value so we can set opts['addnode'] 
+        # when ANY 'orka node add' command is invoked
+        parser_addnode.add_argument('--foo', nargs="?", help=SUPPRESS, default=True, dest='addnode')
+        parser_addnode.add_argument('cluster_id', help='The id of the Hadoop cluster where the node will be added',
+                                   type=checker.positive_num_is)
+
         # hidden argument with default value so we can set opts['removenode'] 
         # when ANY 'orka node remove' command is invoked
         parser_removenode.add_argument('--foo', nargs="?", help=SUPPRESS, default=True, dest='removenode')
