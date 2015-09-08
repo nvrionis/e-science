@@ -204,8 +204,11 @@ def cluster_add_node(token, cluster_id, cluster_to_scale, cyclades, netclient, p
         msg = ' Status for port [%s] is %s' % \
             (port_details['id'], port_status)
         raise ClientError(msg, error_create_server)
-    state = "New server is ACTIVE"
-    set_cluster_state(token, cluster_id, state, status='Active')
+    sleep(5)
+    state = ''
+    cluster_to_scale.cluster_size = cluster_to_scale.cluster_size + 1
+    cluster_to_scale.save()
+    set_cluster_state(token, cluster_id, state, status=status)
 
 def cluster_remove_node(token, cluster_id, cluster_to_scale, cyclades, netclient, status):
     """
@@ -275,7 +278,7 @@ def scale_cluster(token, cluster_id, cluster_delta, status='Pending'):
             state = "Decommissioning Node %s from Hadoop (ansible)" % -counter
             set_cluster_state(token, cluster_id, state, status=status)
             sleep(refresh_timer)
-            cluster_remove_node(token, cluster_id, -counter, status_map[previous_cluster_status])
+            cluster_remove_node(token, cluster_id, cluster_to_scale, cyclades, netclient, status_map[previous_cluster_status])
     elif cluster_delta > 0: # scale up
         # TODO: 1. Create VM > attach to cluster + update metadata on DB 2. Ansible to add datanode to hadoop
         for counter in range(1,cluster_delta+1):
