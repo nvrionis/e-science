@@ -313,7 +313,7 @@ class HadoopCluster(object):
                                     }}
                         yarn_cluster_req = ClusterRequest(self.escience_token, self.server_url, 
                                                           payload, action='cluster')
-                        response = yarn_cluster_req.create_cluster()
+                        response = yarn_cluster_req.scale_cluster()
                         if 'task_id' in response['clusterchoice']:
                             task_id = response['clusterchoice']['task_id']
                         else:

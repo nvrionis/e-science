@@ -48,7 +48,7 @@ App.Uservreserver = DS.Model.extend({
     }.property('os_image'),
     vre_readme_url: function(){
         // Return url with helpful info for docker operations in VRE servers
-        return 'https://github.com/ioannisstenos/e-science/blob/es458/orka/VRE_README.md';
+        return 'https://github.com/grnet/e-science/blob/master/orka/VRE_README.md';
     }.property('os_image'),
     vre_access_url : function(){
         // TODO: add to components info and resolve dynamically
@@ -225,6 +225,11 @@ App.Usercluster = DS.Model.extend({
         }
 		return 'http://%@%@'.fmt(this.get('master_IP'), hdfs_explorer_default);
 	}.property('master_IP'),
+	boolean_scale_cluster_applicable : function(){
+	    var image = this.get('os_image');
+	    var re = /Cloudera/i;
+	    return !re.test(image);
+	}.property('os_image'),
 	ecosystem_or_cloudera : function() {
 		if (this.get('selected_image') > -1 && this.get('selected_image') < 2) {
             return true;
