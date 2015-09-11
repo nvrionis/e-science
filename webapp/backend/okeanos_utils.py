@@ -13,6 +13,7 @@ from kamaki.clients import ClientError
 from kamaki.clients.image import ImageClient
 from kamaki.clients.astakos import AstakosClient
 from kamaki.clients.cyclades import CycladesClient, CycladesNetworkClient
+from kamaki.clients.storage import StorageClient
 from time import sleep
 from cluster_errors_constants import *
 from celery import current_task
@@ -20,6 +21,7 @@ from django_db_after_login import db_cluster_update, get_user_id, db_server_upda
 from backend.models import UserInfo, ClusterInfo, VreServer
 import re
 import subprocess
+import yaml
 
 
 
@@ -720,7 +722,7 @@ def init_cyclades(endpoint, token):
         msg = ' Failed to initialize cyclades client'
         raise ClientError(msg)
 
-  
+
 def get_float_network_id(cyclades_network_client, project_id):
         """
         Gets an Ipv4 floating network id from the list of public networks Ipv4
@@ -999,3 +1001,24 @@ def get_remote_server_file_size(url, user='', password=''):
                                 " | grep -i content-length | awk \'{print $2}\' | tr -d '\r\n'", shell=True)
 
     return int(r)
+
+
+def save_metadata(token, cluster_id):
+    uuid = get_user_id(unmask_token(encrypt_key,token))
+    cluster = ClusterInfo.objects.get(id=cluster_id)
+    cluster_name = cluster.cluster_name.split("-", 1)[1]
+    filename = '{0}_metadata-{1}.yml'.format(cluster_name, cluster_id).replace(" ", "_")
+    data = {"cluster": {"flavor_master": [cluster.cpu_master, cluster.ram_master,cluster.disk_master], 
+                        "flavor_slaves": [cluster.cpu_slaves, cluster.ram_slaves, cluster.disk_slaves], "project_name": cluster.project_name, "image": cluster.os_image,
+                        "cluster_name": cluster.cluster_name, "disk_template": cluster.disk_template, "cluster_size": cluster.cluster_size}, 
+            "configuration": {"dfs_blocksize": cluster.dfs_blocksize, "replication_factor": cluster.replication_factor}}
+    yaml.add_representer(unicode, lambda dumper, value: dumper.represent_scalar(u'tag:yaml.org,2002:str', value))    
+    with open(filename, 'w') as metadata_yml:
+        metadata_yml.write(yaml.dump(data, default_flow_style=False))
+    command = 'curl -X PUT -D - --http1.0 -H "X-Auth-Token: {0}"\
+              -H "Content-Type: text/plain" -T {1} \
+              https://pithos.okeanos.grnet.gr/v1/{2}/pithos/{1}'.format(unmask_token(encrypt_key,token), filename, uuid)
+    p = subprocess.Popen(command, stdout=subprocess.PIPE,stderr=subprocess.PIPE , shell = True)
+    out, err = p.communicate()
+    subprocess.call('rm ' + filename, shell=True)
+    return out
