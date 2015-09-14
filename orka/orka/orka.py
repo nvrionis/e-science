@@ -184,9 +184,9 @@ class HadoopCluster(object):
             stdout.write("server_id: {0}\nserver_IP: {1}\n"
                          "VM root password: {2}\n".format(result['server_id'], result['server_IP'], result['VRE_VM_password']))
             if not 'bigbluebutton' in self.opts['image'].lower():
-                stdout.write("{0} admin user's password: {1}\n".format(filter(lambda l: l.isalpha(), self.opts['image']), self.opts['admin_password']))
+                logging.log(SUMMARY, "{0} admin user's password: {1}\n".format(filter(lambda l: l.isalpha(), self.opts['image']), self.opts['admin_password']))
             if 'dspace' in self.opts['image'].lower():
-                stdout.write("{0} admin user's email: {1}\n".format(filter(lambda l: l.isalpha(), self.opts['image']), self.opts['admin_email']))
+                logging.log(SUMMARY, "{0} admin user's email: {1}\n".format(filter(lambda l: l.isalpha(), self.opts['image']), self.opts['admin_email']))
             exit(SUCCESS)
 
         except Exception, e:
@@ -256,7 +256,7 @@ class HadoopCluster(object):
                     hue_user = 'hdfs'
                 else:
                     hue_user = 'hduser'
-                stdout.write("You can access Hue browser with username {0} and password: {1}\n".format(hue_user, self.opts['admin_password']))
+                logging.log(SUMMARY, "You can access Hue browser with username {0} and password: {1}\n".format(hue_user, self.opts['admin_password']))
 
             exit(SUCCESS)
 
@@ -317,7 +317,7 @@ class HadoopCluster(object):
                                     }}
                         yarn_cluster_req = ClusterRequest(self.escience_token, self.server_url, 
                                                           payload, action='cluster')
-                        response = yarn_cluster_req.scale_cluster()
+                        response = yarn_cluster_req.create_cluster()
                         if 'task_id' in response['clusterchoice']:
                             task_id = response['clusterchoice']['task_id']
                         else:
@@ -789,8 +789,8 @@ class ImagesInfo(object):
                        
     def list_image(self,image):
         """Method for listing info about one image"""
-        stdout.write('{0}: {1}\n'.format('name',image['image_name']))
-        stdout.write('{0}: {1}\n\n'.format('pithos uuid',image['image_pithos_uuid']))
+        print '{0}: {1}'.format('name',image['image_name'])
+        print '{0}: {1}\n'.format('pithos uuid',image['image_pithos_uuid'])
             
     
 def main():
@@ -959,7 +959,7 @@ def main():
         # hidden argument with default value so we can set opts['removenode'] 
         # when ANY 'orka node remove' command is invoked
         parser_removenode.add_argument('--foo', nargs="?", help=SUPPRESS, default=True, dest='removenode')
-        parser_removenode.add_argument('cluster_id', help='The id of the Hadoop cluster', 
+        parser_removenode.add_argument('cluster_id', help='The id of the Hadoop cluster where the node will be removed', 
                                        type=checker.positive_num_is)
 
         parser_list.add_argument('--status', help='Filter by status ({%(choices)s})'

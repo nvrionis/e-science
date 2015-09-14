@@ -89,13 +89,6 @@ class ClusterRequest(object):
         if self.escience_token:
             self.headers.update({'Authorization': 'Token ' + self.escience_token})
 
-    def scale_cluster(self):
-        """Request to scale Hadoop Cluster in ~okeanos."""
-        r = requests.put(self.url, data=json.dumps(self.payload),
-                         headers=self.headers)
-        response = json.loads(r.text)
-        return response
-
     def create_cluster(self):
         """Request to create a Hadoop Cluster in ~okeanos."""
         r = requests.put(self.url, data=json.dumps(self.payload),

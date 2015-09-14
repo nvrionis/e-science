@@ -133,7 +133,7 @@ App.ClusterManagementController = Ember.Controller.extend({
                     self.set('count', extend);
                     self.send('timer', true, store);
                 },function(reason){
-                    console.log('failure');
+                    console.log(reason.message);
                 });
 	        }
 	    },

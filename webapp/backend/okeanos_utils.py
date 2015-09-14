@@ -13,7 +13,6 @@ from kamaki.clients import ClientError
 from kamaki.clients.image import ImageClient
 from kamaki.clients.astakos import AstakosClient
 from kamaki.clients.cyclades import CycladesClient, CycladesNetworkClient
-from kamaki.clients.storage import StorageClient
 from time import sleep
 from cluster_errors_constants import *
 from celery import current_task
@@ -722,7 +721,7 @@ def init_cyclades(endpoint, token):
         msg = ' Failed to initialize cyclades client'
         raise ClientError(msg)
 
-
+  
 def get_float_network_id(cyclades_network_client, project_id):
         """
         Gets an Ipv4 floating network id from the list of public networks Ipv4

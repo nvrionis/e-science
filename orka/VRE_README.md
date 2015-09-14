@@ -1,4 +1,4 @@
-###Virtual Research Environment (VRE) Images
+#Virtual Research Environment (VRE) Images
 
 orka vre commands are used to manage VM appliances which cover a wide range of open-software stacks needed for everyday Research and Academic activities. These images are ~okeanos pre-cooked VMs created with Docker.
 
@@ -8,16 +8,16 @@ Required positional arguments for vre create command:
 
     name: "name of the VRE server",
     cpu: "number of CPU cores of VRE server",
-    ram: "ram in MB of VRE server",
-    disk: "hard drive in GB of VRE server",
+    ram: "ram in MiB of VRE server",
+    disk: "hard drive in GiB of VRE server",
     disk_template: "Standard or Archipelago",
     project_name: "name of a ~okeanos project, to pull resources from",
     image: "name of VRE image"
     
 Optional arguments for vre create command:
 
-    admin_password: "Admin password for VRE servers. Default is auto-generated if not given from user",
-    admin_email: "Admin email for VRE DSpace image. Default is admin@dspace.gr if not given from user"
+    admin_password: "Admin password for VRE servers. Default is auto-generated",
+    admin_email: "Admin email for VRE DSpace image. Default is admin@dspace.gr"
     
  **admin_password must contain only uppercase and lowercase letters and numbers and be at least eight characters long**.
 
@@ -74,7 +74,7 @@ For example, to access the mysql layer (db) in the **Drupal** or **Mediawiki** i
     docker exec -t -i db bash
     mysql -p
 
-and give the admin_password when prompt for password.
+and give the admin_password when prompted for password.
 
 In order to change the mysql root password, type:
 
