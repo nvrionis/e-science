@@ -14,6 +14,7 @@ from kamaki.clients.image import ImageClient
 from kamaki.clients.astakos import AstakosClient
 from kamaki.clients.cyclades import CycladesClient, CycladesNetworkClient
 from time import sleep
+from datetime import datetime
 from cluster_errors_constants import *
 from celery import current_task
 from django_db_after_login import db_cluster_update, get_user_id, db_server_update
@@ -959,18 +960,20 @@ def save_metadata(token, cluster_id):
     uuid = get_user_id(unmask_token(encrypt_key,token))
     cluster = ClusterInfo.objects.get(id=cluster_id)
     cluster_name = cluster.cluster_name.split("-", 1)[1]
-    filename = '{0}_metadata-{1}1.yml'.format(cluster_name, cluster_id).replace(" ", "_")
-    data = {"cluster": {"flavor_master": [cluster.cpu_master, cluster.ram_master,cluster.disk_master], 
-                        "flavor_slaves": [cluster.cpu_slaves, cluster.ram_slaves, cluster.disk_slaves], "project_name": cluster.project_name, "image": cluster.os_image,
-                        "cluster_name": cluster.cluster_name, "disk_template": cluster.disk_template, "cluster_size": cluster.cluster_size}, 
-            "configuration": {"dfs_blocksize": cluster.dfs_blocksize, "replication_factor": cluster.replication_factor}}
-  #  yaml.add_representer(unicode, lambda dumper, value: dumper.represent_scalar(u'tag:yaml.org,2002:str', value))    
-    with open(filename, 'w') as metadata_yml:
+    timestamp = datetime.now().replace(microsecond=0)
+    filename = '{0}-{1}-{2}-cluster-metadata.yml'.format(cluster_name, cluster_id, timestamp).replace(" ", "_")
+    data = {'cluster': {'name': cluster.cluster_name, 'project_name': cluster.project_name, 'image': cluster.os_image, 'disk_template': u'{0}'.format(cluster.disk_template),
+                        'cluster_size': cluster.cluster_size, 'flavor_master':[cluster.cpu_master, cluster.ram_master,cluster.disk_master], 'flavor_slaves': [cluster.cpu_slaves, cluster.ram_slaves, cluster.disk_slaves]}, 
+            'configuration': {'replication_factor': cluster.replication_factor, 'dfs_blocksize': cluster.dfs_blocksize}}
+    yaml.add_representer(unicode, lambda dumper, value: dumper.represent_scalar(u'tag:yaml.org,2002:str', value))
+    with open('/tmp/{0}'.format(filename), 'w') as metadata_yml:
         metadata_yml.write(yaml.dump(data, default_flow_style=False))
-    command = 'curl -X PUT -D - --http1.0 -H "X-Auth-Token: {0}"\
-              -H "Content-Type: text/plain" -T {1} \
-              https://pithos.okeanos.grnet.gr/v1/{2}/pithos/{1}'.format(unmask_token(encrypt_key,token), filename, uuid)
+    command = 'curl -g -X PUT -D - --http1.0 -H "X-Auth-Token: {0}"\
+              -H "Content-Type: text/plain" -T /tmp/{1} \
+              {2}/{3}/pithos/{4}'.format(unmask_token(encrypt_key,token), filename, pithos_url, uuid, urllib.quote(filename))
     p = subprocess.Popen(command, stdout=subprocess.PIPE,stderr=subprocess.PIPE , shell = True)
     out, err = p.communicate()
-    subprocess.call('rm ' + filename, shell=True)
-    return out
+    subprocess.call('rm /tmp/' + filename, shell=True)
+    if success_response in out:
+        return out
+    return err
