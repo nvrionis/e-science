@@ -1004,6 +1004,10 @@ def get_remote_server_file_size(url, user='', password=''):
 
 
 def save_metadata(token, cluster_id):
+    """
+    Creates a yaml file with the cluster metadata.
+    File is sored in Pithos in user's acount.
+    """
     uuid = get_user_id(unmask_token(encrypt_key,token))
     cluster = ClusterInfo.objects.get(id=cluster_id)
     cluster_name = cluster.cluster_name.split("-", 1)[1]
