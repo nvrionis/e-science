@@ -115,6 +115,16 @@ def destroy_server(token, id):
     set_server_state(token, id, state, status='Destroyed')
     return vre_server.server_name
 
+def create_dsl(choices):
+    print "create_dsl"
+    # TODO placeholders for actual implementation
+    pass
+
+def destroy_dsl(token, id):
+    print "destroy_dsl"
+    # TODO placeholders for actual implementation
+    pass
+
 def get_public_ip_id(cyclades_network_client,float_ip):  
     """Return IP dictionary of an ~okeanos public IP"""
     list_of_ips = cyclades_network_client.list_floatingips()
@@ -961,22 +971,18 @@ def save_metadata(token, cluster_id):
     cluster = ClusterInfo.objects.get(id=cluster_id)
     cluster_name = cluster.cluster_name.split("-", 1)[1]
     timestamp = datetime.now().replace(microsecond=0)
-    filename = '{0}-{1}-{2}-cluster-metadata.yml'.format(cluster_name, cluster_id, timestamp).replace(" ", "_")
+    filename = '{0}-{1}-{2}-cluster-metadata.yml'.format(cluster_name, cluster_id, timestamp).replace(" ", "-")
+    filename = filename.replace(":", "-")
     data = {'cluster': {'cluster_name': cluster_name, 'project_name': cluster.project_name, 'image': cluster.os_image, 'disk_template': u'{0}'.format(cluster.disk_template),
                         'cluster_size': cluster.cluster_size, 'flavor_master':[cluster.cpu_master, cluster.ram_master,cluster.disk_master], 'flavor_slaves': [cluster.cpu_slaves, cluster.ram_slaves, cluster.disk_slaves]}, 
             'configuration': {'replication_factor': cluster.replication_factor, 'dfs_blocksize': cluster.dfs_blocksize}}
-   # yaml.add_representer(unicode, lambda dumper, value: dumper.represent_scalar(u'tag:yaml.org,2002:str', value))
     with open('/tmp/{0}'.format(filename), 'w') as metadata_yml:
         metadata_yml.write(yaml.safe_dump(data, default_flow_style=False))
     command = 'curl -g -X PUT -D - --http1.0 -H "X-Auth-Token: {0}"\
               -H "Content-Type: text/plain" -T /tmp/{1} \
               {2}/{3}/pithos/{4}'.format(unmask_token(encrypt_key,token), filename, pithos_url, uuid, urllib.quote(filename))
     p = subprocess.Popen(command, stdout=subprocess.PIPE,stderr=subprocess.PIPE , shell = True)
-    print type(cluster.replication_factor)
     out, err = p.communicate()
-    with open('test_cluster09.yml', 'r') as f:
-        doc = yaml.load(f)
-    print filename
     subprocess.call('rm /tmp/' + filename, shell=True)
     if success_response in out:
         return out
