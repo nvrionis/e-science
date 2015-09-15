@@ -6,7 +6,7 @@ This script contains useful classes and fuctions for orka package.
 
 @author: Ioannis Stenos, Nick Vrionis
 """
-import logging, re, subprocess, yaml
+import logging, re, subprocess, yaml, urllib
 from base64 import b64encode
 from os.path import abspath, join, expanduser
 from kamaki.clients import ClientError
@@ -932,7 +932,7 @@ def read_replication_factor(document):
     for child in root.iter("property"):
         name = child.find("name").text
         if name == "dfs.replication":
-            replication_factor = int(child.find("value").text)
+            replication_factor = child.find("value").text
             break
 
     return replication_factor
@@ -962,17 +962,21 @@ def save_metadata(token, cluster_id):
     cluster_name = cluster.cluster_name.split("-", 1)[1]
     timestamp = datetime.now().replace(microsecond=0)
     filename = '{0}-{1}-{2}-cluster-metadata.yml'.format(cluster_name, cluster_id, timestamp).replace(" ", "_")
-    data = {'cluster': {'name': cluster.cluster_name, 'project_name': cluster.project_name, 'image': cluster.os_image, 'disk_template': u'{0}'.format(cluster.disk_template),
+    data = {'cluster': {'cluster_name': cluster_name, 'project_name': cluster.project_name, 'image': cluster.os_image, 'disk_template': u'{0}'.format(cluster.disk_template),
                         'cluster_size': cluster.cluster_size, 'flavor_master':[cluster.cpu_master, cluster.ram_master,cluster.disk_master], 'flavor_slaves': [cluster.cpu_slaves, cluster.ram_slaves, cluster.disk_slaves]}, 
             'configuration': {'replication_factor': cluster.replication_factor, 'dfs_blocksize': cluster.dfs_blocksize}}
-    yaml.add_representer(unicode, lambda dumper, value: dumper.represent_scalar(u'tag:yaml.org,2002:str', value))
+   # yaml.add_representer(unicode, lambda dumper, value: dumper.represent_scalar(u'tag:yaml.org,2002:str', value))
     with open('/tmp/{0}'.format(filename), 'w') as metadata_yml:
-        metadata_yml.write(yaml.dump(data, default_flow_style=False))
+        metadata_yml.write(yaml.safe_dump(data, default_flow_style=False))
     command = 'curl -g -X PUT -D - --http1.0 -H "X-Auth-Token: {0}"\
               -H "Content-Type: text/plain" -T /tmp/{1} \
               {2}/{3}/pithos/{4}'.format(unmask_token(encrypt_key,token), filename, pithos_url, uuid, urllib.quote(filename))
     p = subprocess.Popen(command, stdout=subprocess.PIPE,stderr=subprocess.PIPE , shell = True)
+    print type(cluster.replication_factor)
     out, err = p.communicate()
+    with open('test_cluster09.yml', 'r') as f:
+        doc = yaml.load(f)
+    print filename
     subprocess.call('rm /tmp/' + filename, shell=True)
     if success_response in out:
         return out

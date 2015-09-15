@@ -284,7 +284,7 @@ class HadoopCluster(object):
             if ((cluster['id'] == self.opts['cluster_id'])):
                 if cluster['cluster_status'] == const_cluster_status_active:
                     if opt_removenode == True:
-                        if int(cluster['cluster_size']) == int(cluster['replication_factor']) +1:
+                        if int(cluster['cluster_size']) == cluster['replication_factor'] +1:
                             print "Limited resources. Cannot remove node."
                             exit(error_remove_node)
                         else:

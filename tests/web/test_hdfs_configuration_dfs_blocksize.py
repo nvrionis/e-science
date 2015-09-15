@@ -109,7 +109,7 @@ class test_hdfs_configuration_dfs_blocksize(unittest.TestCase):
                 button_id = role + '_' + flavor + '_' + str(kamaki_flavors[flavor][0])
                 driver.find_element_by_id(button_id).click()
         driver.find_element_by_id("dfs_blocksize").clear()
-        dfs_blocksize = '64'
+        dfs_blocksize = 64
         driver.find_element_by_id("dfs_blocksize").send_keys(dfs_blocksize)
         time.sleep(3)
         driver.find_element_by_id("next").click()

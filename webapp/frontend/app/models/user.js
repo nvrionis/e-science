@@ -172,8 +172,8 @@ App.Usercluster = DS.Model.extend({
 	task_id : attr(),
 	state : attr(),
 	hadoop_status : attr(),
-	replication_factor : attr(),
-	dfs_blocksize : attr(),
+	replication_factor : attr('number'),
+	dfs_blocksize : attr('number'),
 	// user that created the cluster
 	user : DS.belongsTo('user', {
 		inverse : 'clusters'

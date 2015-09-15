@@ -70,7 +70,7 @@ App.ClusterManagementController = Ember.Controller.extend({
         return false;
 	}.property('cluster_slaves_delta','slaves_increment_loader','cluster_project_data'),
 	slaves_decrement_disabled : function(){
-	    var cluster_min_slaves_allowed = Math.max(1,Number(this.get('content.replication_factor')));
+	    var cluster_min_slaves_allowed = Math.max(1,this.get('content.replication_factor'));
 	    return this.get('cluster_slaves_newsize') > cluster_min_slaves_allowed ? false : true;
 	}.property('cluster_slaves_newsize'),
 	cluster_slaves_delta : function(){
