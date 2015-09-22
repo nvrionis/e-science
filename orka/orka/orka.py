@@ -2,7 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """orka.orka: provides entry point main()."""
-import logging, random, string, re
+import logging
+import random
+import string
+import re
 from sys import argv, stdout, stderr
 from kamaki.clients import ClientError
 from kamaki.clients.pithos import PithosClient
@@ -17,6 +20,7 @@ from utils import ClusterRequest, ConnectionError, authenticate_escience, get_us
     ssh_pithos_stream_to_hadoop, bytes_to_shorthand, from_hdfs_to_pithos, is_period, is_default_dir, \
     check_credentials, endpoints_and_user_id, init_plankton
 from time import sleep
+
 
 class _ArgCheck(object):
     """
@@ -103,6 +107,7 @@ class _ArgCheck(object):
         else:
             raise ArgumentTypeError(" %s must be at least 8 characters and contain only letters and numbers." % val)
 
+
 def task_message(task_id, escience_token, server_url, wait_timer, task='not_progress_bar'):
     """
     Function to check create and destroy celery tasks running from orka-CLI
@@ -128,6 +133,8 @@ def task_message(task_id, escience_token, server_url, wait_timer, task='not_prog
             sleep(wait_timer)
         response = yarn_cluster_logger.retrieve()
         stderr.flush()
+
+
     if 'success' in response['job']:
         stderr.write('{0}'.format('\r'))
         return response['job']['success']
@@ -136,6 +143,7 @@ def task_message(task_id, escience_token, server_url, wait_timer, task='not_prog
         stderr.write('{0}'.format('\r'))
         logging.error(response['job']['error'])
         exit(error_fatal)
+
 
 class HadoopCluster(object):
     """Wrapper class for YarnCluster."""
@@ -212,11 +220,13 @@ class HadoopCluster(object):
         """ Method for taking an action for a Virtual Research Environment server."""
         opt_vre_create = self.opts.get('vre_create', False)
         opt_vre_destroy = self.opts.get('vre_destroy', False)
+
         if opt_vre_create == True:
             self.create_vre_machine()
         elif opt_vre_destroy == True:
             self.destroy_vre_machine()
         
+
     def create(self):
         """ Method for creating Hadoop clusters in~okeanos."""
         try:
@@ -247,11 +257,14 @@ class HadoopCluster(object):
                 else:
                     hue_user = 'hduser'
                 logging.log(SUMMARY, "You can access Hue browser with username {0} and password: {1}\n".format(hue_user, self.opts['admin_password']))
+
             exit(SUCCESS)
+
         except Exception, e:
             stderr.write('{0}'.format('\r'))
             logging.error(str(e.args[0]))
             exit(error_fatal)
+
 
     def destroy(self):
         """ Method for deleting Hadoop clusters in~okeanos."""
@@ -274,11 +287,13 @@ class HadoopCluster(object):
             stderr.write('{0}'.format('\r'))
             logging.error(str(e.args[0]))
             exit(error_fatal)
-                        
+            
+            
     def node_action(self):
         """ Method for taking node actions in a Hadoop cluster in~okeanos."""
         opt_addnode = self.opts.get('addnode', False)
-        opt_removenode = self.opts.get('removenode', False)       
+        opt_removenode = self.opts.get('removenode', False)
+        
         clusters = get_user_clusters(self.opts['token'], self.opts['server_url'])
         for cluster in clusters:
             if ((cluster['id'] == self.opts['cluster_id'])):
@@ -318,6 +333,7 @@ class HadoopCluster(object):
                 else:
                     logging.error('You can take node actions only in an active cluster.')
                     exit(error_fatal)
+
 
     def hadoop_action(self):
         """ Method for applying an action to a Hadoop cluster"""
@@ -399,7 +415,8 @@ class HadoopCluster(object):
                             self.put_from_pithos(active_cluster, kamaki_filespec)
                         else:
                             logging.error('Unrecognized source filespec.')
-                            exit(error_fatal)                        
+                            exit(error_fatal)
+                        
                 except Exception, e:
                     stderr.write('{0}'.format('\r'))
                     logging.error(str(e.args[0]))
@@ -441,7 +458,8 @@ class HadoopCluster(object):
                     stderr.write('{0}'.format('\r'))
                     logging.error(str(e.args[0]))
                     exit(error_fatal)
-                            
+            
+                
     def list_pithos_files(self):
         """ Method for listing pithos+ files available to the user """
         auth_url = self.opts['auth_url']
@@ -482,6 +500,7 @@ class HadoopCluster(object):
             except SystemExit:
                 self.check_hdfs_path(cluster['master_IP'], self.opts['destination'], '-e')
                 return 0
+
             self.opts['destination'] += '/{0}'.format(self.source_filename)
             self.check_hdfs_path(cluster['master_IP'], self.opts['destination'], '-e')
         elif self.opts['destination'].endswith("/") and len(self.opts['destination']) > 1:
@@ -496,6 +515,7 @@ class HadoopCluster(object):
         # if destination is default directory /user/hduser, check if file exists in /user/hduser.
         else:
             self.check_hdfs_path(cluster['master_IP'], self.opts['destination'], '-e')
+
 
     def put_from_pithos(self, cluster, sourcefile):
         """ Method for transferring pithos+ files to Hadoop filesystem """
@@ -513,6 +533,7 @@ class HadoopCluster(object):
             # cleanup
             ssh_pithos_stream_to_hadoop("hduser", cluster['master_IP'],
                               sourcefile, self.opts['destination'], False)
+
 
     def check_hdfs_path(self, master_IP, dest, option):
         """
@@ -543,16 +564,20 @@ class HadoopCluster(object):
                 break
         # read replication factor
         replication_factor = read_replication_factor("hduser", cluster['master_IP'])
+
         # check if file can be uploaded to hdfs
         if file_size * replication_factor > int(dfs_remaining):
             logging.log(SUMMARY, 'File too big to be uploaded' )
             exit(error_fatal)
+
         else:
             """ Streaming """
             logging.log(SUMMARY, "Start uploading file '{0}' to hdfs".format(self.source_filename))
             ssh_stream_to_hadoop("hduser", cluster['master_IP'],
                                   self.opts['source'], self.opts['destination'])
+
             logging.log(SUMMARY, 'Local file uploaded to Hadoop filesystem' )
+
 
     def put_from_server(self):
         """
@@ -562,6 +587,7 @@ class HadoopCluster(object):
         payload = {"hdfs":{"id": self.opts['cluster_id'], "source": "\'{0}\'".format(self.opts['source']),
                                         "dest": "\'{0}\'".format(self.opts['destination']), "user": self.opts['user'],
                                         "password": self.opts['password']}}
+
         yarn_cluster_req = ClusterRequest(self.escience_token, self.server_url, payload, action='hdfs')
         response = yarn_cluster_req.post()
         if 'task_id' in response['hdfs']:
@@ -600,7 +626,8 @@ class HadoopCluster(object):
         try:
             logging.log(SUMMARY, "Checking if \'{0}\' exists in Hadoop filesystem.".format(source))
             src_file_exists = ssh_call_hadoop("hduser", cluster['master_IP'],
-                                      " dfs -test -e " + "\'{0}\'".format(source))            
+                                      " dfs -test -e " + "\'{0}\'".format(source))
+            
             if src_file_exists == 0:
                 src_base_folder, src_file = os.path.split(source)
                 dest_base_folder, dest_top_file_or_folder = os.path.split(destination)
@@ -626,20 +653,25 @@ class HadoopCluster(object):
                                 destination = dest_top_file_or_folder
                     except OSError:
                         logging.error('Choose another destination path-directory.')
-                        exit(error_fatal)                
+                        exit(error_fatal)
+                
                 logging.log(SUMMARY, 'Start downloading file from hdfs')
                 ssh_stream_from_hadoop("hduser", cluster['master_IP'],
-                                       source, destination)              
+                                       source, destination)
+                
             else:
                 logging.error('Source file does not exist.')
                 exit(error_fatal) 
+
             if os.path.exists(destination):
                 logging.log(SUMMARY, 'File downloaded from Hadoop filesystem.')
             else:
-                logging.error('Error while downloading from Hadoop filesystem.')       
+                logging.error('Error while downloading from Hadoop filesystem.')
+        
         except Exception, e:
             logging.error(str(e.args[0]))
             exit(error_fatal)
+
 
 class UserClusterVreInfo(object):
     """ Class holding user cluster and VRE info
@@ -657,7 +689,8 @@ class UserClusterVreInfo(object):
         self.vre_list_order = [['server_name', 'id', 'action_date', 'server_status', 'server_IP', 'project_name', 'os_image',
                                  'disk_template', 'cpu', 'ram', 'disk']]
         self.sort_vre_func = custom_sort_factory(self.vre_list_order)
-        self.vre_short_list = {'id':True, 'server_name':True, 'action_date':True, 'server_status':True, 'server_IP':True}
+        self.vre_short_list = {'id':True, 'server_name':True, 'action_date':True,
+                                   'server_status':True, 'server_IP':True}
         self.sort_cluster_func = custom_sort_factory(self.cluster_list_order)
         self.cluster_short_list = {'id':True, 'cluster_name':True, 'action_date':True, 'cluster_size':True,
                                    'cluster_status':True, 'hadoop_status':True, 'master_IP':True}
@@ -690,12 +723,14 @@ class UserClusterVreInfo(object):
         except Exception, e:
             logging.error(str(e.args[0]))
             exit(error_fatal)
+        
         opt_short = not self.opts['verbose']
         opt_status = False
         opt_id = self.opts.get('{0}_id'.format(type), False)
         count = 0
         if self.opts['status']:
-            opt_status = self.status_desc_to_status_id[self.opts['status'].upper()]        
+            opt_status = self.status_desc_to_status_id[self.opts['status'].upper()]
+        
         if len(self.data) > 0:
             sorted_list = self.sortlist(self.data, self.list_order)
             for cluster_or_vre in sorted_list:
@@ -756,7 +791,8 @@ class ImagesInfo(object):
         """Method for listing info about one image"""
         print '{0}: {1}'.format('name',image['image_name'])
         print '{0}: {1}\n'.format('pithos uuid',image['image_pithos_uuid'])
-                
+            
+    
 def main():
     """
     Entry point of orka package. Parses user arguments and return
@@ -775,7 +811,8 @@ def main():
         kamaki_token = ' '
         kamaki_base_url = ' '
         logging.warning(e.message)
-    auto_generated_pass = "".join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(12))    
+    auto_generated_pass = "".join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(12))
+    
     orka_subparsers = orka_parser.add_subparsers(help='Choose Hadoop cluster or VRE server action')
     orka_parser.add_argument("-V", "--version", action='version',
                         version=('orka %s' % __version__))
@@ -787,10 +824,13 @@ def main():
                               help='Synnefo authentication url. Default is ' +
                               auth_url)
     common_parser.add_argument("--server_url", metavar='server_url', default=kamaki_base_url,
-                              help='Application server url.  Default read from .kamakirc')    
-    common_create_parser = ArgumentParser(add_help=False)      
+                              help='Application server url.  Default read from .kamakirc')
+    
+    common_create_parser = ArgumentParser(add_help=False)
+      
     common_create_parser.add_argument("name", help='The specified name of the cluster or Virtual Research Environment'
                               ' server. Will be prefixed by [orka]', type=checker.a_string_is)
+
     # images
     parser_images = orka_subparsers.add_parser('images', parents=[common_parser],
                                      help='List available Hadoop images.')
@@ -840,14 +880,17 @@ def main():
     parser_addnode = parser_node_subparsers.add_parser('add',
                                                        help='Add a node in a Hadoop-Yarn cluster on ~okeanos.')
     parser_removenode = parser_node_subparsers.add_parser('remove',
-                                                          help='Remove a node from a Hadoop-Yarn cluster on ~okeanos.')    
-    if len(argv) > 1:        
+                                                          help='Remove a node from a Hadoop-Yarn cluster on ~okeanos.')
+    
+    if len(argv) > 1:
+        
         parser_create.add_argument("cluster_size", help='Total number of cluster nodes',
                               type=checker.two_or_larger_is)
         parser_create.add_argument("cpu_master", help='Number of CPU cores for the master node of a cluster',
                                    type=checker.positive_num_is)
         parser_create.add_argument("ram_master", help='Size of RAM (MB) for the master node of a cluster',
-                                   type=checker.positive_num_is)    
+                                   type=checker.positive_num_is)
+    
         parser_create.add_argument("disk_master", help='Disk size (GB) for the master node of a cluster',
                                    type=checker.five_or_larger_is)
         parser_create.add_argument("cpu_slave", help='Number of CPU cores for the slave node(s)',
@@ -863,20 +906,24 @@ def main():
                               ' to request resources from ', type=checker.a_string_is)
         parser_create.add_argument("--image", help='OS for the cluster.'
                               ' Default is "Debian Base"', metavar='image',
-                              default=default_image)        
+                              default=default_image)
+        
         parser_create.add_argument("--replication_factor", metavar='replication_factor', default=2, type=checker.positive_num_is,
                               help='Replication factor for HDFS. Must be between 1 and number of slave nodes (cluster_size -1). Default is 2.')
         parser_create.add_argument("--dfs_blocksize", metavar='dfs_blocksize', default=128, type=checker.positive_num_is,
                               help='HDFS block size (in MB). Default is 128.')
         parser_create.add_argument("--admin_password", metavar='admin_password', default=auto_generated_pass, type=checker.valid_admin_password_is,
-                              help='Admin password for Hue login. Default is auto-generated')        
+                              help='Admin password for Hue login. Default is auto-generated')
+        
         parser_destroy.add_argument('cluster_id',
-                              help='The id of the Hadoop cluster', type=checker.positive_num_is)        
+                              help='The id of the Hadoop cluster', type=checker.positive_num_is)
+        
         parser_vre_create.add_argument('--foo', nargs="?", help=SUPPRESS, default=True, dest='vre_create')
         parser_vre_create.add_argument("cpu", help='Number of CPU cores for VRE server. Must be at least 2 for BigBlueButton.',
                                    type=checker.positive_num_is)
         parser_vre_create.add_argument("ram", help='Size of RAM (MB) for VRE servers must be at least 1024 MiB, except for DSpace and BigBlueButton (2048 MiB)',
-                                   type=checker.greater_than_min_vre_ram_is)    
+                                   type=checker.greater_than_min_vre_ram_is)
+    
         parser_vre_create.add_argument("disk", help='Disk size (GB) for VRE server',
                                    type=checker.five_or_larger_is)
         parser_vre_create.add_argument("disk_template", help='Disk template (choices: {%(choices)s})',
@@ -888,37 +935,49 @@ def main():
         parser_vre_create.add_argument("--admin_password", metavar='admin_password', default=auto_generated_pass, type=checker.valid_admin_password_is,
                               help='Admin password for VRE servers. Default is auto-generated')
         parser_vre_create.add_argument("--admin_email", metavar='admin_email', default='admin@example.com', type=checker.a_string_is,
-                              help='Admin email for VRE DSpace image. Default is admin@example.com')        
-        parser_vre_destroy.add_argument('--foo', nargs="?", help=SUPPRESS, default=True, dest='vre_destroy')        
+                              help='Admin email for VRE DSpace image. Default is admin@example.com')
+        
+        
+        parser_vre_destroy.add_argument('--foo', nargs="?", help=SUPPRESS, default=True, dest='vre_destroy')
+        
         parser_vre_destroy.add_argument('server_id',
-                              help='The id of a VRE server', type=checker.positive_num_is)        
+                              help='The id of a VRE server', type=checker.positive_num_is)
+        
         parser_vre_list.add_argument('--status', help='Filter by status ({%(choices)s})'
                               ' Default is all: no filtering.', type=str.upper,
                               metavar='status', choices=['ACTIVE','DESTROYED','PENDING'])
         parser_vre_list.add_argument('--verbose', help='List extra Virtual Research Environment server details.',
-                              action="store_true")        
+                              action="store_true")
+        
+
         # hidden argument with default value so we can set opts['addnode'] 
         # when ANY 'orka node add' command is invoked
         parser_addnode.add_argument('--foo', nargs="?", help=SUPPRESS, default=True, dest='addnode')
         parser_addnode.add_argument('cluster_id', help='The id of the Hadoop cluster where the node will be added',
                                    type=checker.positive_num_is)
+
         # hidden argument with default value so we can set opts['removenode'] 
         # when ANY 'orka node remove' command is invoked
         parser_removenode.add_argument('--foo', nargs="?", help=SUPPRESS, default=True, dest='removenode')
         parser_removenode.add_argument('cluster_id', help='The id of the Hadoop cluster where the node will be removed', 
                                        type=checker.positive_num_is)
+
         parser_list.add_argument('--status', help='Filter by status ({%(choices)s})'
                               ' Default is all: no filtering.', type=str.upper,
                               metavar='status', choices=['ACTIVE','DESTROYED','PENDING'])
         parser_list.add_argument('--verbose', help='List extra cluster details.',
-                              action="store_true")                        
+                              action="store_true")         
+        
+        
         parser_hadoop.add_argument('hadoop_status', 
                               help='Hadoop status (choices: {%(choices)s})', type=str.lower,
                               metavar='hadoop_status', choices=['start', 'format', 'stop'])
         parser_hadoop.add_argument('cluster_id',
                               help='The id of the Hadoop cluster', type=checker.positive_num_is)
+
         parser_info.add_argument('cluster_id',
                                  help='The id of the Hadoop cluster', type=checker.positive_num_is)
+
         # hidden argument with default value so we can set opts['fileput'] 
         # when ANY 'orka file put' command is invoked
         parser_file_put.add_argument('--foo', nargs="?", help=SUPPRESS, default=True, dest='fileput')
@@ -931,14 +990,16 @@ def main():
         parser_file_put.add_argument('--user',
                               help='Ftp-Http remote user')
         parser_file_put.add_argument('--password',
-                              help='Ftp-Http password')        
+                              help='Ftp-Http password')
+        
         parser_file_mkdir.add_argument('--foo', nargs="?", help=SUPPRESS, default=True, dest='filemkdir')
         parser_file_mkdir.add_argument('cluster_id',
                                        help='The id of the Hadoop cluster', type=checker.positive_num_is)
         parser_file_mkdir.add_argument('directory',
                                        help='Directory to create on HDFS')
         parser_file_mkdir.add_argument('-p', action='store_true', dest='recursive',
-                                       help='Recursive target directory creation')        
+                                       help='Recursive target directory creation')
+        
         # hidden argument with default value so we can set opts['fileget'] 
         # when ANY 'orka file get' command is invoked
         parser_file_get.add_argument('--foo', nargs="?", help=SUPPRESS, default=True, dest='fileget')
@@ -947,13 +1008,15 @@ def main():
         parser_file_get.add_argument('source',
                               help='The file to be downloaded')
         parser_file_get.add_argument('destination',
-                              help='Destination in Local or Pithos+ filesystem')        
+                              help='Destination in Local or Pithos+ filesystem')
+        
         # add a hidden argument with default value so we can set opts['filelist'] 
         # by simply invoking parser_file_list without arguments 'orka file list'
         # orka file list command runs against pithos+ so doesn't need cluster info
         parser_file_list.add_argument('--foo', nargs="?", help=SUPPRESS, default=True, dest='filelist')
         parser_file_list.add_argument('--container', metavar='container', default='/pithos', dest='pithos_container',
-                                      help='Pithos+ container name. Default is "pithos". (kamaki container list)')                
+                                      help='Pithos+ container name. Default is "pithos". (kamaki container list)')
+                
         opts = vars(orka_parser.parse_args(argv[1:]))
         c_hadoopcluster = HadoopCluster(opts)
         c_userservers = UserClusterVreInfo(opts)
@@ -992,9 +1055,12 @@ def main():
                 c_hadoopcluster.vre_action()
         elif verb == 'node':
             c_hadoopcluster.node_action()
+
     else:
         logging.error('No arguments were given')
         orka_parser.parse_args(' -h'.split())
-        exit(error_no_arguments)         
+        exit(error_no_arguments)
+         
+
 if __name__ == "__main__":
     main()
