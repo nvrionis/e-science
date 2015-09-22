@@ -154,9 +154,9 @@ class ClusterchoicesSerializer(serializers.Serializer):
     
     ssh_key_selection = serializers.CharField(required=False)
     
-    replication_factor = serializers.IntegerField(required=False)
+    replication_factor = serializers.CharField(required=False)
     
-    dfs_blocksize = serializers.IntegerField(required=False)
+    dfs_blocksize = serializers.CharField(required=False)
 
     task_id = serializers.CharField(required=False)
     

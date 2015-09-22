@@ -17,9 +17,9 @@ App.ClusterCreateController = Ember.Controller.extend({
 	slaves_disk_selection : 0, 	// Initial slaves_disk_selection, appears in slaves disk summary
 	cluster_name : '', 		// Initial cluster name, null
 	replication_factor : '', 		// Replication_factor for hdfs
-	default_replication_factor: 2, // Deafault replication_factor for hdfs
+	default_replication_factor: '2', // Deafault replication_factor for hdfs
 	dfs_blocksize : '', 		// Hadoop dfs_blocksize
-	default_dfs_blocksize: 128, // Deafault dfs_blocksize for hdfs  is 128MB
+	default_dfs_blocksize: '128', // Deafault dfs_blocksize for hdfs  is 128MB
 	operating_system : 'Debian Base', // Preselected OS
 	disk_temp : '', 	// Initial storage selection, common for master and slaves friendly to  user name
 	cluster_size_zero : false, 	// for checking the available VMs, cluster size
@@ -844,7 +844,7 @@ App.ClusterCreateController = Ember.Controller.extend({
 	},
 	
 	replication_factor_change : function(){
-		if (((this.get('replication_factor') == this.get('default_replication_factor'))&&(this.get('cluster_size') != 2)) || ((this.get('replication_factor') == 1) && (this.get('cluster_size') == 2)) || (this.get('replication_factor')=='')){
+		if (((this.get('replication_factor') == this.get('default_replication_factor'))&&(this.get('cluster_size') != 2)) || ((this.get('replication_factor') == '1') && (this.get('cluster_size') == 2)) || (this.get('replication_factor')=='')){
 			this.set('warning_mes_replication_factor', '');
 		}
 		else {
@@ -1301,17 +1301,17 @@ App.ClusterCreateController = Ember.Controller.extend({
 				var elem = document.getElementById("hdfs_configuration");
 				window.scrollTo(elem.offsetLeft, elem.offsetTop);
 			}
-			else if ((this.get('replication_factor') > (this.get('cluster_size')-1)) || (this.get('replication_factor') <= 0)){
+			else if ((parseInt(this.get('replication_factor')) > (this.get('cluster_size')-1)) || (parseInt(this.get('replication_factor')) <= 0)){
 				this.set('alert_mes_replication_factor', 'Replication_factor must be positive and not greater than the number of slaves');
 				var elem = document.getElementById("hdfs_configuration");
 				window.scrollTo(elem.offsetLeft, elem.offsetTop);					
 			}
-			else if (isNaN(this.get('dfs_blocksize'))){
+			else if (isNaN(parseInt(this.get('dfs_blocksize')))){
 				this.set('alert_mes_dfs_blocksize', 'Blocksize is an integer');
 				var elem = document.getElementById("hdfs_configuration");
 				window.scrollTo(elem.offsetLeft, elem.offsetTop);
 			}
-			else if (this.get('dfs_blocksize') <= 0){
+			else if (parseInt(this.get('dfs_blocksize')) <= 0){
 				this.set('alert_mes_dfs_blocksize', 'Blocksize must be positive');
 				var elem = document.getElementById("hdfs_configuration");
 				window.scrollTo(elem.offsetLeft, elem.offsetTop);					

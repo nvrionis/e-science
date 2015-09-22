@@ -342,7 +342,7 @@ def read_replication_factor(user, master_IP):
     for child in root.iter("property"):
         name = child.find("name").text
         if name == "dfs.replication":
-            replication_factor = child.find("value").text
+            replication_factor = int(child.find("value").text)
             break
 
     return replication_factor
