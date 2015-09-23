@@ -42,7 +42,10 @@ class YarnCluster(object):
         self.orka_image_uuid = False
         # List of cluster VMs
         self.server_dict = {}
-        self.opts['disk_template'] = reverse_storage_template[self.opts['disk_template']]
+        if self.opts['disk_template'] == 'Archipelago':
+            self.opts['disk_template'] = 'ext_vlmc'
+        elif self.opts['disk_template'] == 'Standard':
+            self.opts['disk_template'] = 'drbd'
         # project id of project name given as argument
         self.project_id = get_project_id(unmask_token(encrypt_key, self.opts['token']),
                                          self.opts['project_name'])
