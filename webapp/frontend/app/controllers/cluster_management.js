@@ -107,6 +107,13 @@ App.ClusterManagementController = Ember.Controller.extend({
 	}.property('content.cluster_action_destroy_disabled','initial_timer_active'),
 
 	actions : {
+		// Back action when in cluster management -> redirect to user's welcome screen
+		back : function() {
+		    var that = this;
+			this.get('controllers.userWelcome').send('setActiveTab','clusters');
+			// redirect to welcome
+			Ember.run.next(function(){that.transitionToRoute('user.welcome');});
+		},
 	    increment_size : function(){
 	        this.set('cluster_slaves_newsize',this.get('cluster_slaves_newsize')+1);
 	        $('#id_number_of_slaves').focus();

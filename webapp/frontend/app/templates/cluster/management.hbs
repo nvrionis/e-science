@@ -21,7 +21,7 @@
         <a data-toggle="tab" {{bind-attr href="content_tabs.scale.href"}}>{{content_tabs.scale.name}}</a>
     </li>
 </ul>
-<div id="id_management_tab_content" class="tab-content">
+<div id="id_management_tab_content" class="row tab-content">
         <table class="table table-condensed table-bordered">
             <tr><td class="h5 col-sm-2"><b>Cluster Status</b></td>
                 <td class="text text-info col-sm-2"><i {{bind-attr class="content.cluster_status_class"}}></i>{{content.cluster_status_verbose}}</td>
@@ -259,4 +259,12 @@
            </form>
        </div>
    </div> 
+</div>
+<div class = "row">
+	<div class="col col-sm-10"></div>
+	<div class="col col-sm-2">
+        <button id="back" class="next btn btn-default btn-md btn-block" {{action "back"}}>
+            Back
+        </button>
+    </div>
 </div>
