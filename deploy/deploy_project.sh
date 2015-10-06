@@ -60,6 +60,7 @@ apt-get install -y git python python-dev python-pip;
 pip install ansible==1.9.2;
 pip install kamaki==0.13.1;
 pip install django_admin_bootstrapped==2.4.0;
+pip install django-rest-swagger==2.4.0;
 exit'
 echo "Information" > $SERVERNAME.txt
 echo "===========" >> $SERVERNAME.txt
