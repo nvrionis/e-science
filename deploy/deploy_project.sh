@@ -59,7 +59,7 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $HOST \
 apt-get install -y git python python-dev python-pip;
 pip install ansible==1.9.2;
 pip install kamaki==0.13.1;
-pip install django_admin_bootstrapped==2.4.0;
+pip install django-admin-bootstrapped==2.4.0;
 pip install django-rest-swagger==0.3.2;
 exit'
 echo "Information" > $SERVERNAME.txt
