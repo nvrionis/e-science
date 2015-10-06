@@ -28,7 +28,7 @@ error_quotas_cpu = -11 # Not enough cpu quota in cyclades
 error_quotas_ram = -12 # Not enough ram quota in cyclades
 error_quotas_cluster_size = -13 # Not enough VM quota in cyclades
 error_quotas_network = -14 # Not enough private network quota 
-error_flavor_id = -15 # Not used anywhere
+error_flavor_id = -15 # Not a valid combination of resources
 error_image_id = -16 # Not a valid image given
 error_syntax_token = -17 # Not used anywhere
 error_ready_reroute = -18 # Not used anywhere
@@ -95,12 +95,11 @@ const_hadoop_status_started = "1"
 const_hadoop_status_format = "2"
 const_hadoop_status_undefined = "3"
 
-        #Set hadoop pending status to 2 (same as hadoop status format and cluster status pending)
+#Set hadoop pending status to 2 (same as hadoop status format and cluster status pending)
 const_hadoop_status_pending = const_hadoop_status_format
 
-        # If celery message is bigger than following value, it truncates the message. We check if message length is bigger than const_truncate_limit, then add dots (..) at the end of message to indicate truncation. Used for orka cli mainly.
+# If celery message is bigger than following value, it truncates the message. We check if message length is bigger than const_truncate_limit, then add dots (..) at the end of message to indicate truncation. Used for orka cli mainly.
 const_truncate_limit = 350
-
 const_escience_uuid = "ec567bea-4fa2-433d-9935-261a0867ec60"
 const_system_uuid = "25ecced9-bf53-4145-91ee-cf47377e9fb2"
 HADOOP_STATUS_ACTIONS = {"stop": ["0", "Stopping", "Stopped"],
@@ -117,7 +116,8 @@ hadoop_images_ansible_tags = {"debianbase": {"stop": "stop", "start": "start"},
                               "ecosystem": {"start": "start,FLUMEstart,ECOSYSTEMstart,HUEstart",
                                             "stop": "stop,FLUMEstop,ECOSYSTEMstop,HUEstop"},
                               "cloudera": {"start": "start,CLOUDstart", "stop": "stop,CLOUDstop"}}
-# Dictionary of pithos images UUIDs with their corresponding properties
+
+# Dictionary of pithos Hadoop images UUIDs with their corresponding properties
 pithos_images_uuids_properties = {"d3782488-1b6d-479d-8b9b-363494064c52": {"role":"yarn", "tags":"-t preconfig,postconfig", "image":"debianbase"},
                              "3f1f5195-7769-44ba-a4c2-418d86e30f97": {"role":"yarn", "tags":"-t postconfig", "image":"hadoopbase"},
                              "7a8423da-0cfb-414c-9491-1dcb81a87eb6": {"role":"yarn", "tags":"-t postconfig,hueconfig", "image":"hue"},
@@ -142,14 +142,14 @@ pithos_vre_images_uuids_actions = {"d6593183-39c7-4f64-98fe-e74c49ea00b1": {"ima
                                "b1ae3738-b7b3-429e-abef-2fa475f30f0b": {"image":"mediawiki","db_name":"db","default_password":"@test123",
                                                                         "update_password":"/usr/bin/mysqladmin -u root -p@test123 password {0}",
                                                                         "change_db_pass":"docker exec -t -i db bash -c \"mysql -p{0} mediawiki -e \\\"UPDATE user SET user_password = CONCAT(':A:', MD5('{0}')) WHERE user_name = 'Admin';\\\"\""},
-                               "6a6676d4-213c-464b-a321-04998c1d8dc7": {"image":"dspace","update_password":"/usr/bin/docker exec -d dspace sudo -u postgres psql -U postgres -d dspace -c \"alter user dspace password '{0}';\"",
+                               "c5850bc1-255d-4847-9b89-ce8e86667250": {"image":"dspace","update_password":"/usr/bin/docker exec -d dspace sudo -u postgres psql -U postgres -d dspace -c \"alter user dspace password '{0}';\"",
                                                                         "change_db_pass":"docker exec -d dspace sed -i 's/db.password *= * *dspace/db.password={0}/g' /dspace/config/dspace.cfg"},
                                "0d26fd55-31a4-46b3-955d-d94ecf04a323": {"image":"bigbluebutton"}}
 
                                                                         
 # encrypt/decrypt token in django db
 from encrypt_key import key     # File with only one variable key = encrypt_key, keep it outside git
-        # Encrypts  and decrypts every user's ~okeanos token in database.
+# Encrypts  and decrypts every user's ~okeanos token in database.
 encrypt_key = key
 
 def mask_token(key, token):
