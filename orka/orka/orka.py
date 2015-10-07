@@ -302,9 +302,9 @@ class HadoopCluster(object):
         clusters = get_user_clusters(self.opts['token'], self.opts['server_url'])
         for cluster in clusters:
             if ((cluster['id'] == self.opts['cluster_id'])):
-                if cluster['cluster_status'] == const_cluster_status_active:
+                if cluster['cluster_status'] == const_cluster_status_active: # Filter active clusters
                     if opt_removenode == True:
-                        if int(cluster['cluster_size']) == int(cluster['replication_factor']) +1:
+                        if int(cluster['cluster_size']) == int(cluster['replication_factor']) +1:   # Replication factor by definition must not exceeds the number of slave nodes
                             print "Limited resources. Cannot remove node."
                             exit(error_remove_node)
                         else:
@@ -346,7 +346,7 @@ class HadoopCluster(object):
         clusters = get_user_clusters(self.opts['token'], self.opts['server_url'])
         active_cluster = None
         for cluster in clusters:
-            if (cluster['id'] == self.opts['cluster_id']):
+            if (cluster['id'] == self.opts['cluster_id']): # Search for given cluster through all of user clusters
                 active_cluster = cluster
                 if cluster['cluster_status'] == const_cluster_status_active:
                     break
@@ -380,20 +380,20 @@ class HadoopCluster(object):
         opt_fileput = self.opts.get('fileput', False)
         opt_fileget = self.opts.get('fileget', False)
         opt_filemkdir = self.opts.get('filemkdir', False)
-        if opt_filelist == True:
+        if opt_filelist == True:    # orka file list action
             self.list_pithos_files()
         else:
             clusters = get_user_clusters(self.opts['token'], self.opts['server_url'])
             active_cluster = None
             for cluster in clusters:
-                if (cluster['id'] == self.opts['cluster_id']):
+                if (cluster['id'] == self.opts['cluster_id']): # Search for given cluster through all of user clusters
                     if cluster['hadoop_status'] == const_hadoop_status_started:
                         active_cluster = cluster
                         break
             else:
                 logging.error('You can take file actions on active clusters with started hadoop only.')
                 exit(error_fatal)
-            if opt_fileput == True:
+            if opt_fileput == True: # orka file put action
                 try:
                     sourcesLength = len(self.opts['destination'])
                     sources = [self.opts['source']]
@@ -410,6 +410,7 @@ class HadoopCluster(object):
                         if is_period(self.opts['destination']) or is_default_dir(self.opts['destination']):
                             self.opts['destination'] = self.source_filename
                         file_protocol, remain = get_file_protocol(self.opts['source'], 'fileput', 'source')
+                        #Selected proper function for put action
                         self.check_hdfs_destination(active_cluster)
                         if file_protocol == 'http-ftp':
                             self.put_from_server()
@@ -426,11 +427,12 @@ class HadoopCluster(object):
                     stderr.write('{0}'.format('\r'))
                     logging.error(str(e.args[0]))
                     exit(error_fatal)
-            elif opt_fileget == True:
+            elif opt_fileget == True:   # orka file get action
                 try:
                     if is_period(self.opts['destination']):
                         self.opts['destination'] = os.getcwd()
                     file_protocol, remain = get_file_protocol(self.opts['destination'], 'fileget', 'destination')
+                    #Selected proper function for get action
                     if file_protocol == 'pithos':
                         self.get_from_hadoop_to_pithos(active_cluster, remain)
                     elif file_protocol == 'file' or file_protocol == "folder":
@@ -442,7 +444,7 @@ class HadoopCluster(object):
                     stderr.write('{0}'.format('\r'))
                     logging.error(str(e.args[0]))
                     exit(error_fatal)
-            elif opt_filemkdir == True:
+            elif opt_filemkdir == True: # orka file mkdir action
                 try:
                     file_protocol, remain = get_file_protocol(self.opts['directory'], 'filemkdir', 'destination')
                     if file_protocol == "hdfs":
@@ -468,7 +470,7 @@ class HadoopCluster(object):
     def list_pithos_files(self):
         """ Method for listing pithos+ files available to the user """
         auth_url = self.opts['auth_url']
-        token = self.opts['token']
+        token = self.opts['token']  # Token define the user whom pithos files will be listed. 
         try:
             auth = AstakosClient(auth_url, token)
             auth.authenticate()
