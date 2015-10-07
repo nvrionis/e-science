@@ -222,7 +222,7 @@ class HadoopCluster(object):
             exit(error_fatal)
     
     def vre_action(self):
-        """ Method for taking an action for a Virtual Research Environment server."""
+        """ Method for performing an action on a Virtual Research Environment server."""
         opt_vre_create = self.opts.get('vre_create', False)
         opt_vre_destroy = self.opts.get('vre_destroy', False)
 
@@ -233,7 +233,7 @@ class HadoopCluster(object):
         
 
     def create(self):
-        """ Method for creating Hadoop clusters in~okeanos."""
+        """ Method for creating Hadoop clusters in ~okeanos."""
         try:
             payload = {"clusterchoice":{"project_name": self.opts['project_name'], "cluster_name": self.opts['name'],
                                         "cluster_size": self.opts['cluster_size'],
@@ -260,7 +260,7 @@ class HadoopCluster(object):
                 if 'CDH' in self.opts['image']:
                     hue_user = 'hdfs'
                 else:
-                    hue_user = 'hduser'
+                    hue_user = DEFAULT_HADOOP_USER
                 logging.log(SUMMARY, "You can access Hue browser with username {0} and password: {1}\n".format(hue_user, self.opts['admin_password']))
 
             exit(SUCCESS)
@@ -272,7 +272,9 @@ class HadoopCluster(object):
 
 
     def destroy(self):
-        """ Method for deleting Hadoop clusters in~okeanos."""
+        """ Method for deleting Hadoop clusters in ~okeanos."""
+        
+        # Retrieve list of user clusters and filter to locate the designated one
         clusters = get_user_clusters(self.opts['token'], self.opts['server_url'])
         for cluster in clusters:
             if (cluster['id'] == self.opts['cluster_id']) and cluster['cluster_status'] == const_cluster_status_active:
@@ -295,23 +297,24 @@ class HadoopCluster(object):
             
             
     def node_action(self):
-        """ Method for taking node actions in a Hadoop cluster in~okeanos."""
+        """ Method for performing node actions in a Hadoop cluster in~okeanos."""
         opt_addnode = self.opts.get('addnode', False)
         opt_removenode = self.opts.get('removenode', False)
         
+        # Retrieve list of user clusters and filter to locate the designated one
         clusters = get_user_clusters(self.opts['token'], self.opts['server_url'])
         for cluster in clusters:
             if ((cluster['id'] == self.opts['cluster_id'])):
                 if cluster['cluster_status'] == const_cluster_status_active: # Filter active clusters
                     if opt_removenode == True:
                         if int(cluster['cluster_size']) == int(cluster['replication_factor']) +1:   # Replication factor by definition must not exceeds the number of slave nodes
-                            print "Limited resources. Cannot remove node."
+                            logging.error( "Limited resources. Cannot remove node.")
                             exit(error_remove_node)
                         else:
-                            print "Removing node"
+                            logging.log(SUMMARY, "Removing node")
                             new_cluster_size = int(cluster['cluster_size'])-1
                     elif opt_addnode == True:
-                        print "Adding node"
+                        logging.log(SUMMARY, "Adding node")
                         new_cluster_size = int(cluster['cluster_size'])+1
                     else:
                         break
@@ -336,15 +339,18 @@ class HadoopCluster(object):
                         logging.error(str(e.args[0]))
                         exit(error_fatal)
                 else:
-                    logging.error('You can take node actions only in an active cluster.')
+                    logging.error('You can perform node actions only on an active cluster.')
                     exit(error_fatal)
 
 
     def hadoop_action(self):
-        """ Method for applying an action to a Hadoop cluster"""
+        """ Method for performing an action on a Hadoop cluster"""
+
         action = str.lower(self.opts['hadoop_status'])
         clusters = get_user_clusters(self.opts['token'], self.opts['server_url'])
         active_cluster = None
+
+        # Retrieve list of user clusters and filter to locate the designated one
         for cluster in clusters:
             if (cluster['id'] == self.opts['cluster_id']): # Search for given cluster through all of user clusters
                 active_cluster = cluster
@@ -374,7 +380,7 @@ class HadoopCluster(object):
             exit(error_fatal)
     
     def file_action(self):
-        """ Method for taking actions to and from Hadoop filesystem """
+        """ Method for performing actions to and from HDFS """
         # safe getters, defaults to False if the option is not set
         opt_filelist = self.opts.get('filelist', False)
         opt_fileput = self.opts.get('fileput', False)
@@ -383,6 +389,7 @@ class HadoopCluster(object):
         if opt_filelist == True:    # orka file list action
             self.list_pithos_files()
         else:
+            # Retrieve list of user clusters and filter to locate the designated one
             clusters = get_user_clusters(self.opts['token'], self.opts['server_url'])
             active_cluster = None
             for cluster in clusters:
@@ -410,7 +417,7 @@ class HadoopCluster(object):
                         if is_period(self.opts['destination']) or is_default_dir(self.opts['destination']):
                             self.opts['destination'] = self.source_filename
                         file_protocol, remain = get_file_protocol(self.opts['source'], 'fileput', 'source')
-                        #Selected proper function for put action
+                        # Selected proper function for put action
                         self.check_hdfs_destination(active_cluster)
                         if file_protocol == 'http-ftp':
                             self.put_from_server()
@@ -452,7 +459,7 @@ class HadoopCluster(object):
                             str_command = " dfs -mkdir -p \"{0}\"".format(remain)
                         else:
                             str_command = " dfs -mkdir \"{0}\"".format(remain)
-                        retcode = ssh_call_hadoop("hduser", active_cluster['master_IP'], str_command)
+                        retcode = ssh_call_hadoop(DEFAULT_HADOOP_USER, active_cluster['master_IP'], str_command)
                         if str(retcode) == str(SUCCESS):
                             logging.log(SUMMARY, "\"{0}\" created.".format(remain))
                             exit(SUCCESS)
@@ -468,9 +475,10 @@ class HadoopCluster(object):
             
                 
     def list_pithos_files(self):
-        """ Method for listing pithos+ files available to the user """
+        """ Method for listing Pithos files available to the user """
+ 
         auth_url = self.opts['auth_url']
-        token = self.opts['token']  # Token define the user whom pithos files will be listed. 
+        token = self.opts['token']  # Token define the user whose pithos files will be listed. 
         try:
             auth = AstakosClient(auth_url, token)
             auth.authenticate()
@@ -487,13 +495,14 @@ class HadoopCluster(object):
             is_dir = 'application/directory' in object.get('content_type', object.get('content-type', ''))
             is_dir = 'application/folder' in object.get('content_type', object.get('content-type', ''))
             if not is_dir:
-                print u"{:>12s} \"pithos:/{:s}/{:s}\"".format(bytes_to_shorthand(object['bytes']),
-                                                              pithos_container,object['name'])
+                logging.log(SUMMARY, u"{:>12s} \"pithos:/{:s}/{:s}\"".format(bytes_to_shorthand(object['bytes']),
+                                                              pithos_container,object['name']))
 
     def check_hdfs_destination(self, cluster):
         """
-        Method checking the Hdfs destination argument for existence and type (directory or file).
+        Method checking the HDFS destination argument for existence and type (directory or file).
         """
+ 
         parsed_path = parse_hdfs_dest("(.+/)[^/]+$", self.opts['destination'])
         if parsed_path:
             # if directory path ends with filename, checking if both exist
@@ -519,26 +528,27 @@ class HadoopCluster(object):
                 raise RuntimeError(msg)
             self.check_hdfs_path(cluster['master_IP'], self.opts['destination'] + self.source_filename, '-e')
             self.opts['destination'] += self.source_filename
-        # if destination is default directory /user/hduser, check if file exists in /user/hduser.
+        # if destination is default directory DEFAULT_HDFS_DIR, check if file exists in DEFAULT_HDFS_DIR.
         else:
             self.check_hdfs_path(cluster['master_IP'], self.opts['destination'], '-e')
 
 
     def put_from_pithos(self, cluster, sourcefile):
-        """ Method for transferring pithos+ files to Hadoop filesystem """
+        """ Method for transferring Pithos files to HDFS """
         """ Streaming """
+ 
         logging.log(SUMMARY, 'Start transferring pithos file to hdfs' )
-        pithos_url = ssh_pithos_stream_to_hadoop("hduser", cluster['master_IP'],
+        pithos_url = ssh_pithos_stream_to_hadoop(DEFAULT_HADOOP_USER, cluster['master_IP'],
                               sourcefile, self.opts['destination'])
         if pithos_url:
             self.opts['source'] = pithos_url
             result = self.put_from_server()
             if result == 0:
-                logging.log(SUMMARY, 'Pithos+ file uploaded to Hadoop filesystem' )
+                logging.log(SUMMARY, 'Pithos file uploaded to HDFS' )
             else:
-                logging.log(SUMMARY, 'There was a problem uploading to Hadoop')
+                logging.log(SUMMARY, 'There was a problem uploading to HDFS')
             # cleanup
-            ssh_pithos_stream_to_hadoop("hduser", cluster['master_IP'],
+            ssh_pithos_stream_to_hadoop(DEFAULT_HADOOP_USER, cluster['master_IP'],
                               sourcefile, self.opts['destination'], False)
 
 
@@ -546,7 +556,9 @@ class HadoopCluster(object):
         """
         Check if a path exists in Hdfs 0: exists, 1: doesn't exist
         """
-        path_exists = ssh_call_hadoop("hduser", master_IP, " dfs -test " + option + " " + "\'" + dest + "\'")
+
+        # construct full pithos path, use dfs -test
+        path_exists = ssh_call_hadoop(DEFAULT_HADOOP_USER, master_IP, " dfs -test " + option + " " + "\'" + dest + "\'")
         if option == '-e' and path_exists == 0:
             logging.error('File already exists. Aborting upload.')
             exit(error_fatal)
@@ -556,41 +568,44 @@ class HadoopCluster(object):
 
     def put_from_local(self, cluster):
         """ Put local files to Hdfs."""
+
         if os.path.isfile(self.opts['source']):
             file_size = os.path.getsize(self.opts['source'])
         else:
             msg = 'File {0} does not exist'.format(self.opts['source'])
             raise IOError(msg)
 
-        # check available free space in hdfs
-        report = ssh_check_output_hadoop("hduser", cluster['master_IP'], " dfsadmin -report / ")
+        # check available free space in HDFS, use dfsadmin
+        report = ssh_check_output_hadoop(DEFAULT_HADOOP_USER, cluster['master_IP'], " dfsadmin -report / ")
         for line in report:
             if line.startswith('DFS Remaining'):
                 tokens = line.split(' ')
                 dfs_remaining = tokens[2]
                 break
+ 
         # read replication factor
-        replication_factor = read_replication_factor("hduser", cluster['master_IP'])
+        replication_factor = read_replication_factor(DEFAULT_HADOOP_USER, cluster['master_IP'])
 
-        # check if file can be uploaded to hdfs
+        # compute filesize and check for available space in HDFS
         if file_size * replication_factor > int(dfs_remaining):
             logging.log(SUMMARY, 'File too big to be uploaded' )
             exit(error_fatal)
 
         else:
             """ Streaming """
-            logging.log(SUMMARY, "Start uploading file '{0}' to hdfs".format(self.source_filename))
-            ssh_stream_to_hadoop("hduser", cluster['master_IP'],
+            logging.log(SUMMARY, "Start uploading file '{0}' to HDFS".format(self.source_filename))
+            ssh_stream_to_hadoop(DEFAULT_HADOOP_USER, cluster['master_IP'],
                                   self.opts['source'], self.opts['destination'])
 
-            logging.log(SUMMARY, 'Local file uploaded to Hadoop filesystem' )
+            logging.log(SUMMARY, 'Local file uploaded to HDFS' )
 
 
     def put_from_server(self):
         """
-        Put files from ftp/http server to Hdfs. Send a POST request to orka app server to
+        Put files from ftp/http server to HDFS. Send a POST request to orka app server to
         copy the ftp/http file to the requested
         """
+
         payload = {"hdfs":{"id": self.opts['cluster_id'], "source": "\'{0}\'".format(self.opts['source']),
                                         "dest": "\'{0}\'".format(self.opts['destination']), "user": self.opts['user'],
                                         "password": self.opts['password']}}
@@ -607,17 +622,18 @@ class HadoopCluster(object):
                                   task='has_progress_bar')
         if result == 0:
             stdout.flush()
-            logging.log(SUMMARY, 'Transfered file to Hadoop filesystem')
+            logging.log(SUMMARY, 'Transferred file to HDFS')
             return result
     
     def get_from_hadoop_to_pithos(self, cluster, destination_path):
-        """ Method for getting files from Hadoop clusters in ~okeanos to pithos filesystem."""
+        """ Method for getting files from Hadoop clusters to Pithos filesystem."""
+ 
         try:
-            file_exists = ssh_call_hadoop("hduser", cluster['master_IP'],
+            file_exists = ssh_call_hadoop(DEFAULT_HADOOP_USER, cluster['master_IP'],
                                       " dfs -test -e " + "\'{0}\'".format(self.opts['source']))
             if file_exists == 0:
                 logging.log(SUMMARY, 'Start downloading file from hdfs')
-                from_hdfs_to_pithos("hduser", cluster['master_IP'],
+                from_hdfs_to_pithos(DEFAULT_HADOOP_USER, cluster['master_IP'],
                                   self.opts['source'], destination_path)
             else:
                 logging.error('File does not exist.')
@@ -627,54 +643,50 @@ class HadoopCluster(object):
             exit(error_fatal)
     
     def get_from_hadoop_to_local(self, cluster):
-        """ Method for getting files from Hadoop clusters in ~okeanos to local filesystem."""
+        """ Method for getting files from Hadoop clusters to local filesystem."""
+
         source = self.opts['source']
         destination = self.opts['destination']
         try:
-            logging.log(SUMMARY, "Checking if \'{0}\' exists in Hadoop filesystem.".format(source))
-            src_file_exists = ssh_call_hadoop("hduser", cluster['master_IP'],
-                                      " dfs -test -e " + "\'{0}\'".format(source))
-            
+            logging.log(SUMMARY, "Checking if \'{0}\' exists in HDFS.".format(source))
+            src_file_exists = ssh_call_hadoop(DEFAULT_HADOOP_USER, cluster['master_IP'],
+                                      " dfs -test -e " + "\'{0}\'".format(source))          
             if src_file_exists == 0:
-                src_base_folder, src_file = os.path.split(source)
-                dest_base_folder, dest_top_file_or_folder = os.path.split(destination)
-                if os.path.exists(destination):
+                src_base_folder, src_file = os.path.split(source) # Split the source path into a pair, (head, tail)
+                dest_base_folder, dest_top_file_or_folder = os.path.split(destination) # Split the destination path into a pair, (head, tail)
+                if os.path.exists(destination): # Check if destination already exists in os.path
                     if os.path.isfile(destination):
                         logging.log(SUMMARY, "\'{0}\' already exists.".format(destination))
                         exit(error_fatal)
-                    elif os.path.isdir(destination):
+                    elif os.path.isdir(destination): # Return True if destination refers to an existing directory
                         destination = os.path.join(destination,src_file)
-                        if os.path.exists(destination):
+                        if os.path.exists(destination): # Return True if destination is an existing file path
                             logging.log(SUMMARY, "\'{0}\' already exists.".format(destination))
                             exit(error_fatal)
                 else:
                     try:
                         if dest_base_folder:
                             if not os.path.exists(dest_base_folder):
-                                os.makedirs(dest_base_folder)
+                                os.makedirs(dest_base_folder) # Create base folder
                             destination = os.path.join(dest_base_folder,src_file)
                         else:
-                            if dest_top_file_or_folder.endswith("/"):
-                                destination = os.path.join(dest_top_file_or_folder,src_file)
+                            if dest_top_file_or_folder.endswith("/"): # Check if dest_top_file_or_folder is folder path
+                                destination = os.path.join(dest_top_file_or_folder,src_file) # dest_top_file_or_folder is folder so src_file is added to create full filenamepath 
                             else:
-                                destination = dest_top_file_or_folder
+                                destination = dest_top_file_or_folder # dest_top_file_or_folder is a file
                     except OSError:
                         logging.error('Choose another destination path-directory.')
-                        exit(error_fatal)
-                
-                logging.log(SUMMARY, 'Start downloading file from hdfs')
-                ssh_stream_from_hadoop("hduser", cluster['master_IP'],
+                        exit(error_fatal)               
+                logging.log(SUMMARY, 'Start downloading file from HDFS')
+                ssh_stream_from_hadoop(DEFAULT_HADOOP_USER, cluster['master_IP'], # stream file from HDFS to the destination in os.path
                                        source, destination)
-                
             else:
                 logging.error('Source file does not exist.')
                 exit(error_fatal) 
-
             if os.path.exists(destination):
-                logging.log(SUMMARY, 'File downloaded from Hadoop filesystem.')
+                logging.log(SUMMARY, 'File downloaded from HDFS.')
             else:
-                logging.error('Error while downloading from Hadoop filesystem.')
-        
+                logging.error('Error while downloading from HDFS.')       
         except Exception, e:
             logging.error(str(e.args[0]))
             exit(error_fatal)
@@ -686,6 +698,7 @@ class UserClusterVreInfo(object):
     sortlist: input a clusters or VREs list of cluster or VRE dictionaries, output a clusters or VREs list respectively sorted according to cluster or VRE key
     list: pretty printer
     """
+
     def __init__(self, opts):
         self.opts = opts
         self.data = list()
@@ -764,12 +777,12 @@ class UserClusterVreInfo(object):
                         fmt_string = '{:<10}' + key + ': ' + custom_date_format(sorted_cluster_or_vre[key])
                     else:
                         fmt_string = '{:<10}' + key + ': {' + key + '}'
-                    print fmt_string.format('',**sorted_cluster_or_vre)
-                print ''
+                    logging.log(SUMMARY, fmt_string.format('',**sorted_cluster_or_vre))
+                logging.log(SUMMARY, '')
             if count == 0:
-                print 'No {0}(s) found matching those options.'.format(type)
+                logging.warning( 'No {0}(s) found matching those options.'.format(type))
         else:
-            print 'No user {0} Information available.'.format(type)
+            logging.warning( 'No user {0} Information available.'.format(type))
 
 class ImagesInfo(object):
     """ Class holding info for available images"""
@@ -796,8 +809,8 @@ class ImagesInfo(object):
                        
     def list_image(self,image):
         """Method for listing info about one image"""
-        print '{0}: {1}'.format('name',image['image_name'])
-        print '{0}: {1}\n'.format('pithos uuid',image['image_pithos_uuid'])
+        logging.log(SUMMARY, '{0}: {1}'.format('name',image['image_name']))
+        logging.log(SUMMARY, '{0}: {1}\n'.format('pithos uuid',image['image_pithos_uuid']))
             
     
 def main():
@@ -868,10 +881,10 @@ def main():
                                      help='List user clusters.')
     parser_info = orka_subparsers.add_parser('info', parents=[common_parser],
                                      help='Information for a specific Hadoop-Yarn cluster.')
-    # hadoop actions group
+    # Hadoop actions group
     parser_hadoop = orka_subparsers.add_parser('hadoop',parents=[common_parser],
                                      help='Start, Stop or Format a Hadoop-Yarn cluster.')
-    # hadoop filesystem actions group
+    # Hadoop filesystem actions group
     parser_file = orka_subparsers.add_parser('file', parents=[common_parser],
                                         help='File operations between various file sources and Hadoop-Yarn filesystem.')
     file_subparsers = parser_file.add_subparsers(help='Choose file action put, get or list')
@@ -993,7 +1006,7 @@ def main():
         parser_file_put.add_argument('source',
                               help='The files (local, pithos, ftp) to be uploaded')
         parser_file_put.add_argument('destination', nargs="+",
-                              help='Destination in the Hadoop filesystem')
+                              help='Destination in HDFS')
         parser_file_put.add_argument('--user',
                               help='Ftp-Http remote user')
         parser_file_put.add_argument('--password',
@@ -1022,21 +1035,21 @@ def main():
         # orka file list command runs against pithos+ so doesn't need cluster info
         parser_file_list.add_argument('--foo', nargs="?", help=SUPPRESS, default=True, dest='filelist')
         parser_file_list.add_argument('--container', metavar='container', default='/pithos', dest='pithos_container',
-                                      help='Pithos+ container name. Default is "pithos". (kamaki container list)')
+                                      help='Pithos container name. Default is "pithos". (kamaki container list)')
                 
         opts = vars(orka_parser.parse_args(argv[1:]))
         c_hadoopcluster = HadoopCluster(opts)
         c_userservers = UserClusterVreInfo(opts)
         c_imagesinfo = ImagesInfo(opts)
-        verb = argv[1]
+        verb = argv[1]  # Main action, decision tree follows
         if verb == 'create':
             if opts['cluster_size'] == 2:
-                if opts['replication_factor'] != 1:
+                if opts['replication_factor'] != 1: # Replication factor by definition must not exceeds the number of slave nodes
                     logging.warning('Replication factor cannot exceed the number of slave nodes; defaulting to 1')
-                    opts['replication_factor'] = 1
+                    opts['replication_factor'] = 1 # if cluster size is 2 there is only one slave node so replication factor must be one as well
             if opts['cluster_size'] <= opts['replication_factor']:
                 logging.error('Replication factor must be between 1 and number of slave nodes (cluster_size -1)')
-                exit(error_replication_factor)
+                exit(error_replication_factor) # Exists with error replication factor too big 
             if opts['image'] in images_without_hue:
                 opts['admin_password'] = ''
             c_hadoopcluster.create()
