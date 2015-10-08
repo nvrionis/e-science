@@ -4,7 +4,7 @@
 """
 This module contains the definitions of returned errors and package constants.
 
-@author: Ioannis Stenos, Nick Vrionis
+@author: e-science Dev-team
 """
 import os
 

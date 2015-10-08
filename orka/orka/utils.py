@@ -134,7 +134,7 @@ def get_user_clusters(token, server_url, choice='clusters'):
         msg = ' Authentication error: Invalid Token'
         raise ClientError(msg, error_authentication)
     except Exception, e:
-        print ' ' + str(e.args[0])
+        logging.error(' ' + str(e.args[0]))
 
     payload = {"user": {"id": 1}}
     orka_request = ClusterRequest(escience_token, server_url, payload, action='login')
@@ -604,7 +604,7 @@ def is_period(checked_string):
 
 def is_default_dir(checked_string):
     """
-    Check if string is default Hdfs directory
+    Check if string is default HDFS directory
     """
     if checked_string in DEFAULT_HDFS_DIR:
         return True

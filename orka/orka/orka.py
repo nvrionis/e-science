@@ -149,6 +149,7 @@ def task_message(task_id, escience_token, server_url, wait_timer, task='not_prog
 
 class HadoopCluster(object):
     """Wrapper class for YarnCluster."""
+    
     def __init__(self, opts):
         self.opts = opts
         try: 
@@ -231,7 +232,6 @@ class HadoopCluster(object):
         elif opt_vre_destroy == True:
             self.destroy_vre_machine()
         
-
     def create(self):
         """ Method for creating Hadoop clusters in ~okeanos."""
         try:
@@ -270,7 +270,6 @@ class HadoopCluster(object):
             logging.error(str(e.args[0]))
             exit(error_fatal)
 
-
     def destroy(self):
         """ Method for deleting Hadoop clusters in ~okeanos."""
         
@@ -294,7 +293,6 @@ class HadoopCluster(object):
             stderr.write('{0}'.format('\r'))
             logging.error(str(e.args[0]))
             exit(error_fatal)
-            
             
     def node_action(self):
         """ Method for performing node actions in a Hadoop cluster in~okeanos."""
@@ -341,7 +339,6 @@ class HadoopCluster(object):
                 else:
                     logging.error('You can perform node actions only on an active cluster.')
                     exit(error_fatal)
-
 
     def hadoop_action(self):
         """ Method for performing an action on a Hadoop cluster"""
@@ -472,8 +469,7 @@ class HadoopCluster(object):
                     stderr.write('{0}'.format('\r'))
                     logging.error(str(e.args[0]))
                     exit(error_fatal)
-            
-                
+                         
     def list_pithos_files(self):
         """ Method for listing Pithos files available to the user """
  
@@ -532,7 +528,6 @@ class HadoopCluster(object):
         else:
             self.check_hdfs_path(cluster['master_IP'], self.opts['destination'], '-e')
 
-
     def put_from_pithos(self, cluster, sourcefile):
         """ Method for transferring Pithos files to HDFS """
         """ Streaming """
@@ -551,10 +546,9 @@ class HadoopCluster(object):
             ssh_pithos_stream_to_hadoop(DEFAULT_HADOOP_USER, cluster['master_IP'],
                               sourcefile, self.opts['destination'], False)
 
-
     def check_hdfs_path(self, master_IP, dest, option):
         """
-        Check if a path exists in Hdfs 0: exists, 1: doesn't exist
+        Check if a path exists in HHDFS 0: exists, 1: doesn't exist
         """
 
         # construct full pithos path, use dfs -test
@@ -567,7 +561,7 @@ class HadoopCluster(object):
         return path_exists
 
     def put_from_local(self, cluster):
-        """ Put local files to Hdfs."""
+        """ Put local files to HDFS."""
 
         if os.path.isfile(self.opts['source']):
             file_size = os.path.getsize(self.opts['source'])
@@ -598,7 +592,6 @@ class HadoopCluster(object):
                                   self.opts['source'], self.opts['destination'])
 
             logging.log(SUMMARY, 'Local file uploaded to HDFS' )
-
 
     def put_from_server(self):
         """
@@ -784,6 +777,7 @@ class UserClusterVreInfo(object):
         else:
             logging.warning( 'No user {0} Information available.'.format(type))
 
+
 class ImagesInfo(object):
     """ Class holding info for available images"""
     
@@ -884,16 +878,16 @@ def main():
     # Hadoop actions group
     parser_hadoop = orka_subparsers.add_parser('hadoop',parents=[common_parser],
                                      help='Start, Stop or Format a Hadoop-Yarn cluster.')
-    # Hadoop filesystem actions group
+    # HDFS actions group
     parser_file = orka_subparsers.add_parser('file', parents=[common_parser],
-                                        help='File operations between various file sources and Hadoop-Yarn filesystem.')
+                                        help='File operations between various file sources and HDFS.')
     file_subparsers = parser_file.add_subparsers(help='Choose file action put, get or list')
     parser_file_put = file_subparsers.add_parser('put', parents=[common_parser], usage='%(prog)s cluster_id source [source ...] destination',
-                                     help='Put/Upload a file from <source> to the Hadoop-Yarn filesystem.')
+                                     help='Put/Upload a file from <source> to the HDFS.')
     parser_file_mkdir = file_subparsers.add_parser('mkdir',parents=[common_parser],
-                                                   help='Create a directory on the Hadoop-Yarn filesystem')
+                                                   help='Create a directory on the HDFS')
     parser_file_get = file_subparsers.add_parser('get',parents=[common_parser],
-                                     help='Get/Download a file from the Hadoop-Yarn filesystem to <destination>.')
+                                     help='Get/Download a file from the HDFS to <destination>.')
     parser_file_list = file_subparsers.add_parser('list',parents=[common_parser],
                                              help='List pithos+ files.')
     parser_node_subparsers = parser_node.add_subparsers(help='Choose node action add or delete')
