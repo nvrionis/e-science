@@ -30,6 +30,7 @@ urlpatterns = patterns('', url(r'^$', MainPageView.as_view()),
                        url(r'^api/dsls', DslView.as_view()),
                        url(r'^api/hdfs', HdfsView.as_view()),
                        url(r'^api/settings', SettingsView.as_view()),
+                       url(r'^docs/', include('rest_framework_swagger.urls'))
                        )
 
 # if settings.DEBUG:
