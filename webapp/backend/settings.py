@@ -59,6 +59,7 @@ INSTALLED_APPS = (
     'rest_framework_ember',
     'rest_framework.authtoken',
     'rest_framework_swagger',
+    'rest_framework_docs',
     'djcelery',
     'backend',
 )

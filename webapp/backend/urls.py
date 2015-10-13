@@ -17,19 +17,20 @@ admin.site.site_title = admin.site.site_header
 admin.site.index_title = ''
 
 urlpatterns = patterns('', url(r'^$', MainPageView.as_view()),
-                       url(r'^api/statistics', StatisticsView.as_view()),
-                       url(r'^api/newsitems', NewsView.as_view()),
-                       url(r'^api/orkaimages', OrkaImagesView.as_view()),
-                       url(r'^api/vreimages', VreImagesView.as_view()),
+                       url(r'^api/statistics', StatisticsView.as_view(), name='statistics_of_service'),
+                       url(r'^api/newsitems', NewsView.as_view(), name='news_list'),
+                       url(r'^api/orkaimages', OrkaImagesView.as_view(), name='orka_images'),
+                       url(r'^api/vreimages', VreImagesView.as_view(), name='vre_images'),
                        url(r'^admin', include(admin.site.urls)),
-                       url(r'^api/users', SessionView.as_view()),
-                       url(r'^api/clusters', StatusView.as_view()),
-                       url(r'^api/clusterchoices', StatusView.as_view()),
-                       url(r'^api/jobs', JobsView.as_view()),
-                       url(r'^api/vreservers', VreServerView.as_view()),
-                       url(r'^api/dsls', DslView.as_view()),
-                       url(r'^api/hdfs', HdfsView.as_view()),
-                       url(r'^api/settings', SettingsView.as_view()),
+                       url(r'^api/users', SessionView.as_view(), name='user_status'),
+                       url(r'^api/clusters', StatusView.as_view(), name='hadoop_clusters'),
+                       url(r'^api/clusterchoices', StatusView.as_view(), name='list_of_cluster_choices'),
+                       url(r'^api/jobs', JobsView.as_view(), name='tasks_list'),
+                       url(r'^api/vreservers', VreServerView.as_view(), name='virtual_research_environments'),
+                       url(r'^api/dsls', DslView.as_view(), name='reproducible_experiements'),
+                       url(r'^api/hdfs', HdfsView.as_view(), name='hdfs_actions'),
+                       url(r'^api/settings', SettingsView.as_view(), name='settings'),
+                       url(r'^rest-api/', include('rest_framework_docs.urls')),
                        url(r'^docs/', include('rest_framework_swagger.urls'))
                        )
 

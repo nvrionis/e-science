@@ -7,6 +7,10 @@ Views for django rest framework .
 @author: e-science Dev-team
 """
 import logging
+
+
+
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, GenericAPIView
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -29,6 +33,10 @@ from tasks import create_cluster_async, destroy_cluster_async, scale_cluster_asy
 from create_cluster import YarnCluster
 from celery.result import AsyncResult
 from reroute_ssh import HdfsRequest
+from rest_framework.decorators import api_view
+
+
+from django.db import models
 
 
 logging.addLevelName(REPORT, "REPORT")
@@ -43,27 +51,28 @@ class MainPageView(generic.TemplateView):
     """Load the template file"""
     template_name = 'index.html'
 
-class SettingsView(APIView):
+class SettingsView(GenericAPIView):
     """
     View to handle requests for instance settings.
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (AllowAny, )
     resource_name = 'setting'
+    serializer_class = SettingsSerializer
     
     def get(self, request, *args, **kwargs):
         settings = Setting.objects.all()
         serializer_class = SettingsSerializer(settings, many=True)
         return Response(serializer_class.data)
 
-
-class VreImagesView(APIView):
+class VreImagesView(GenericAPIView):
     """
     View to handle requests from ember for VRE image metadata
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (AllowAny, )
     resource_name = 'vreimage'
+    serializer_class = VreImagesSerializer
 
     def get(self, request, *args, **kwargs):
         """
@@ -73,14 +82,15 @@ class VreImagesView(APIView):
         serializer_class = VreImagesSerializer(image_data, many=True)
         return Response(serializer_class.data)
 
-class OrkaImagesView(APIView):
+class OrkaImagesView(GenericAPIView):
     """
     View to handle requests from ember for VM image metadata
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (AllowAny, )
     resource_name = 'orkaimage'
-
+    serializer_class = OrkaImagesSerializer
+    
     def get(self, request, *args, **kwargs):
         """
         Return news items.
@@ -89,13 +99,14 @@ class OrkaImagesView(APIView):
         serializer_class = OrkaImagesSerializer(image_data, many=True)
         return Response(serializer_class.data)
 
-class NewsView(APIView):
+class NewsView(GenericAPIView):
     """
     View to handle requests from ember for public news on homepage
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (AllowAny, )
     resource_name = 'newsitem'
+    serializer_class = NewsSerializer
 
     def get(self, request, *args, **kwargs):
         """
@@ -105,14 +116,15 @@ class NewsView(APIView):
         serializer_class = NewsSerializer(public_news, many=True)
         return Response(serializer_class.data)
 
-class StatisticsView(APIView):
+class StatisticsView(GenericAPIView):
     """
     View to handle requests from ember for cluster statistics on homepage
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (AllowAny, )
     resource_name = 'statistic'
-
+    serializer_class = StatisticsSerializer
+    
     def get(self, request, *args, **kwargs):
         """
         Return cluster statistics for all users from database.
@@ -125,8 +137,7 @@ class StatisticsView(APIView):
         serializer_class = StatisticsSerializer(cluster_statistics)
         return Response(serializer_class.data)
 
-
-class HdfsView(APIView):
+class HdfsView(GenericAPIView):
     """
     View for handling requests for file transfer to HDFS.
     """
@@ -156,8 +167,7 @@ class HdfsView(APIView):
         # correctly.
         return Response(serializer.errors)
 
-
-class JobsView(APIView):
+class JobsView(GenericAPIView):
     """
     View to get info for celery tasks.
     """
@@ -186,8 +196,7 @@ class JobsView(APIView):
                 return Response({'state': c_task.state})
         return Response(serializer.errors)
 
-
-class StatusView(APIView):
+class StatusView(GenericAPIView):
     """
     View to handle requests for retrieving cluster creation parameters
     from ~okeanos and checking user's choices for cluster creation
@@ -198,18 +207,19 @@ class StatusView(APIView):
     resource_name = 'cluster'
     serializer_class = ClusterCreationParamsSerializer
 
+    
     def get(self, request, *args, **kwargs):
         """
         Return a serialized ClusterCreationParams model with information
         retrieved by kamaki calls. User with corresponding status will be
         found by the escience token.
+        param3 -- A third parameter
         """
         user_token = Token.objects.get(key=request.auth)
         self.user = UserInfo.objects.get(user_id=user_token.user.user_id)
         retrieved_cluster_info = project_list_flavor_quota(self.user)
         serializer = self.serializer_class(retrieved_cluster_info, many=True)
         return Response(serializer.data)
-
 
     def put(self, request, *args, **kwargs):
         """
@@ -260,7 +270,6 @@ class StatusView(APIView):
         # correctly.
         return Response(serializer.errors)
 
-
     def delete(self, request, *args, **kwargs):
         """
         Delete cluster from ~okeanos.
@@ -278,8 +287,7 @@ class StatusView(APIView):
         # correctly.
         return Response(serializer.errors)
 
-
-class SessionView(APIView):
+class SessionView(GenericAPIView):
     """
     View to handle requests from ember for user login and logout and
     user theme update
@@ -342,7 +350,7 @@ class SessionView(APIView):
             return Response(serializer.errors,
                             status=status.HTTP_400_BAD_REQUEST)
             
-class VreServerView(APIView):
+class VreServerView(GenericAPIView):
     """
     View to handle requests for Virtual Research Environment servers.
     """
@@ -401,7 +409,7 @@ class VreServerView(APIView):
         # correctly.
         return Response(serializer.errors)
     
-class DslView(APIView):
+class DslView(GenericAPIView):
     """
     View to handle requests for User DSL management.
     """
