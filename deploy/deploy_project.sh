@@ -61,6 +61,7 @@ pip install ansible==1.9.2;
 pip install kamaki==0.13.1;
 pip install django-admin-bootstrapped==2.4.0;
 pip install django-rest-swagger==0.3.2;
+pip install django-rest-framework-docs
 exit'
 echo "Information" > $SERVERNAME.txt
 echo "===========" >> $SERVERNAME.txt

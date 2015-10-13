@@ -18,6 +18,7 @@ install:
 - pip install rest_framework_ember
 - pip install django-admin-bootstrapped
 - pip install django-rest-swagger
+- pip install django-rest-framework-docs
 - pip install selenium
 - pip install mock
 - pip install rednose
