@@ -320,7 +320,10 @@ class YarnCluster(object):
         Return id of given image
         """
         # check image metadata in database and pithos and set vre_image_uuid accordingly
-        self.vre_image_uuid = VreImage.objects.get(image_name=self.opts['os_choice']).image_pithos_uuid
+        chosen_vre_image = VreImage.objects.get(image_name=self.opts['os_choice'])
+        self.vre_image_uuid = chosen_vre_image.image_pithos_uuid
+        # check if VRE image requires shell script to initialize (e.g BigBlueButton does not require it)
+        self.vre_req_script = chosen_vre_image.requires_script
         # Find image id of the operating system arg given
         list_current_images = self.plankton.list_public(True, 'default')
         for image in list_current_images:
@@ -333,7 +336,8 @@ class YarnCluster(object):
     def create_vre_server(self):
         """
         Create VRE server in ~okeanos
-        """        
+        """
+        vre_script_file_name = ''
         flavor_id = self.get_flavor_id('master')
         if flavor_id == 0:
             msg = 'Combination of cpu, ram, disk and disk_template do' \
@@ -349,20 +353,23 @@ class YarnCluster(object):
         task_id = current_task.request.id
         server_id = db_server_create(self.opts, task_id)
         self.server_name_postfix_id = '{0}-{1}-vre'.format(self.opts['server_name'], server_id)
-
+        # Check if a shell script is required to be copied to VRE server
+        if self.vre_req_script:
+            vre_script_file_name = 'scripts/{0}'.format(vre_script_name)
         # Check if user chose ssh keys or not.
-        if self.opts['ssh_key_selection'] is None or self.opts['ssh_key_selection'] == 'no_ssh_key_selected':
+        ssh_key_selected = self.opts.get('ssh_key_selection','no_ssh_key_selected')
+        if ssh_key_selected == 'no_ssh_key_selected' or ssh_key_selected is None:
             self.ssh_file = 'no_ssh_key_selected'
         else:
             self.ssh_key_file(self.server_name_postfix_id)
             pub_keys_path = self.ssh_file
         try:
-            server = self.cyclades.create_server(vre_server_name, flavor_id, image_id, personality=personality('', pub_keys_path, 'scripts/{0}'.format(vre_script_name)), project_id=self.project_id)
+            server = self.cyclades.create_server(vre_server_name, flavor_id, image_id, personality=personality('', pub_keys_path,vre_script_file_name), project_id=self.project_id)
         except ClientError, e:
             # If no public IP is free, get a new one
             if e.status == status.HTTP_409_CONFLICT:
                 get_float_network_id(self.net_client, project_id=self.project_id)
-                server = self.cyclades.create_server(vre_server_name, flavor_id, image_id, personality=personality('', pub_keys_path, 'scripts/{0}'.format(vre_script_name)), project_id=self.project_id)
+                server = self.cyclades.create_server(vre_server_name, flavor_id, image_id, personality=personality('', pub_keys_path, vre_script_file_name), project_id=self.project_id)
             else:
                 msg = u'VRE server \"{0}\" creation failed due to error: {1}'.format(self.opts['server_name'], str(e.args[0]))
                 set_server_state(self.opts['token'], server_id, 'Error',status='Failed', error=msg)
@@ -394,7 +401,8 @@ class YarnCluster(object):
         try:
             vre_image_uuid = self.vre_image_uuid
             if vre_image_uuid == server['image']['id']:
-                if vre_image_uuid is not '0d26fd55-31a4-46b3-955d-d94ecf04a323':
+                # Check if shell script is required for VRE server
+                if self.vre_req_script:
                     start_vre_script(server_ip,server_pass,self.opts['admin_password'], vre_script_name, self.opts['admin_email'])
             else:
                 msg = u'VRE server \"{0}\" creation failed. Created okeanos VM id does not match image {1} id'.format(self.opts['server_name'],
@@ -436,7 +444,8 @@ class YarnCluster(object):
         self.cluster_name_postfix_id = '%s%s%s' % (self.opts['cluster_name'], '-', self.cluster_id)
 
         # Check if user chose ssh keys or not.
-        if self.opts['ssh_key_selection'] is None or self.opts['ssh_key_selection'] == 'no_ssh_key_selected':
+        ssh_key_selected = self.opts.get('ssh_key_selection','no_ssh_key_selected')
+        if ssh_key_selected == 'no_ssh_key_selected' or ssh_key_selected is None:
             self.ssh_file = 'no_ssh_key_selected'
 
         else:

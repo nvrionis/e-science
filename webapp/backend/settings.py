@@ -58,10 +58,10 @@ INSTALLED_APPS = (
     'rest_framework',
     'rest_framework_ember',
     'rest_framework.authtoken',
-    'rest_framework_swagger',
     'rest_framework_docs',
     'djcelery',
     'backend',
+    'rest_framework_swagger',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -127,7 +127,6 @@ SWAGGER_SETTINGS = {
     ],
     "is_authenticated": False
 }
-
 
 # By default Django expects a trailing slash on urls and will 301 redirect
 # any requests lacking a trailing slash.

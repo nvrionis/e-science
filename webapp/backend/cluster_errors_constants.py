@@ -34,6 +34,8 @@ error_multiple_entries = -72 # Multiple entries in database for something unique
 error_project_quota = -73 # Zero user quota for a given project       
 error_authentication = -99 # Invalid token
 error_container = -76 # Error pithos container not found while upload dsl file
+error_import_dsl = -78 # Failed to import DSL file from pithos
+error_pithos_connection = -79 # Failed to reach Pithos filesystem
 
 FNULL = open(os.devnull, 'w') # Redirects whatever is assigned to FNULL to nothingness (e.g. stderr=FNULL)
 
@@ -62,9 +64,7 @@ auth_url = 'https://accounts.okeanos.grnet.gr/identity/v2.0'
 pithos_url = 'https://pithos.okeanos.grnet.gr/v1'
 pithos_put_success = 201  # Success pithos response
 pithos_container_not_found = 404
-
-# If no image is given in orka-cli, this is the default image. Not used in backed/cluster_errors_constants
-default_image = 'Debian Base'
+pithos_object_not_found = pithos_container_not_found
 
 # Cluster status constants
 const_cluster_status_destroyed = "0"
@@ -76,14 +76,15 @@ const_hadoop_status_stopped = "0"
 const_hadoop_status_started = "1"
 const_hadoop_status_format = "2"
 const_hadoop_status_undefined = "3"
+# Experiment status constants
+const_experiment_status_atrest = "0"
+const_experiment_status_replay = "1"
 
 #Set hadoop pending status to 2 (same as hadoop status format and cluster status pending)
 const_hadoop_status_pending = const_hadoop_status_format
 
 # If celery message is bigger than following value, it truncates the message. We check if message length is bigger than const_truncate_limit, then add dots (..) at the end of message to indicate truncation. Used for orka cli mainly.
 const_truncate_limit = 350
-const_escience_uuid = "ec567bea-4fa2-433d-9935-261a0867ec60"
-const_system_uuid = "25ecced9-bf53-4145-91ee-cf47377e9fb2"
 HADOOP_STATUS_ACTIONS = {"stop": ["0", "Stopping", "Stopped"],
                          "start": ["1", "Starting", "Started"],
                          "format": ["2", "Formatting", "Formatted"],

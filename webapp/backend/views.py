@@ -7,9 +7,6 @@ Views for django rest framework .
 @author: e-science Dev-team
 """
 import logging
-
-
-
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, GenericAPIView
 from rest_framework import status
 from rest_framework.views import APIView
@@ -29,10 +26,11 @@ from django_db_after_login import *
 from cluster_errors_constants import *
 from tasks import create_cluster_async, destroy_cluster_async, scale_cluster_async, \
     hadoop_cluster_action_async, put_hdfs_async, create_server_async, destroy_server_async, \
-    create_dsl_async, destroy_dsl_async
+    create_dsl_async, import_dsl_async, destroy_dsl_async, replay_dsl_async
 from create_cluster import YarnCluster
 from celery.result import AsyncResult
 from reroute_ssh import HdfsRequest
+from okeanos_utils import check_pithos_path, check_pithos_object_exists, get_pithos_container_info
 from rest_framework.decorators import api_view
 
 
@@ -198,7 +196,7 @@ class JobsView(GenericAPIView):
 
 class StatusView(GenericAPIView):
     """
-    Create and delete cluster
+    Cluster Actions
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (IsAuthenticatedOrIsCreation, )
@@ -361,7 +359,7 @@ class VreServerView(GenericAPIView):
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (IsAuthenticated, )
     resource_name = 'vreserver'
-    serializer_class = ClusterchoicesSerializer
+    model = VreServer
     
     def get(self, request, *args, **kwargs):
         """
@@ -379,7 +377,8 @@ class VreServerView(GenericAPIView):
         """
         Handles requests with user's VRE server creation parameters.
         """
-        serializer = self.serializer_class(data=request.DATA)
+        serializer_class = ClusterchoicesSerializer
+        serializer = serializer_class(data=request.DATA)
         if serializer.is_valid():
             user_token = Token.objects.get(key=request.auth)
             user = UserInfo.objects.get(user_id=user_token.user.user_id)
@@ -416,21 +415,18 @@ class VreServerView(GenericAPIView):
 class DslView(GenericAPIView):
     """
     User DSL management.
+    
+    param1 -- A first parameter
+    param1 -- A first parameter    
+    param1 -- A first parameter
+    param1 -- A first parameter
+    
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (IsAuthenticated, )
     resource_name = 'dsl'
     serializer_class = DslsSerializer
-    
-    def get(self, request, *args, **kwargs):
-        """
-        Return a serialized Cluster metadata model. User with corresponding status will be
-        found by the escience token.
-        """
-        user_token = Token.objects.get(key=request.auth)
-        self.user = UserInfo.objects.get(user_id=user_token.user.user_id)
-        serializer = self.serializer_class(data=request.DATA, many=True)
-        return Response(serializer.data)
+    model = Dsl
     
     def post(self, request, *args, **kwargs):
         """
@@ -445,6 +441,22 @@ class DslView(GenericAPIView):
             choices = dict()
             choices = serializer.data.copy()
             choices.update({'token': user.okeanos_token})
+            choices['pithos_path'] = check_pithos_path(choices['pithos_path'])
+            choices.update({'pithos_path': choices['pithos_path']})
+            uuid = get_user_id(unmask_token(encrypt_key, choices['token']))
+            if serializer.data['cluster_id'] == -1:
+                choices.update({'cluster_id': None})
+                dsl_file_status_code = check_pithos_object_exists(choices['pithos_path'], choices['dsl_name'], choices['token'])
+                if dsl_file_status_code == pithos_object_not_found:
+                    return Response(serializer.errors,
+                            status=status.HTTP_404_NOT_FOUND)
+                i_dsl = import_dsl_async.delay(choices)
+                task_id = i_dsl.id
+                return Response({"id":1, "task_id": task_id}, status=status.HTTP_202_ACCEPTED)
+            container_status_code = get_pithos_container_info(choices['pithos_path'], choices['token'])
+            if container_status_code == pithos_container_not_found:
+                return Response(serializer.errors,
+                            status=status.HTTP_404_NOT_FOUND)
             c_dsl = create_dsl_async.delay(choices)
             task_id = c_dsl.id
             return Response({"id":1, "task_id": task_id}, status=status.HTTP_202_ACCEPTED)
@@ -452,6 +464,30 @@ class DslView(GenericAPIView):
         # This will be send if user's parameters are not de-serialized
         # correctly.
         return Response(serializer.errors)
+    
+    def get(self, request, *args, **kwargs):
+        """
+        Return a serialized Cluster metadata model. User with corresponding status will be
+        found by the escience token.
+        """
+        user_token = Token.objects.get(key=request.auth)
+        self.user = UserInfo.objects.get(user_id=user_token.user.user_id)
+        serializer = self.serializer_class(data=request.DATA, many=True)
+        return Response(serializer.data)
+    
+    def put(self, request, *args, **kwargs):
+        """
+        Use the experiment metadata to replay an experiment. Create cluster if necessary, then perform the actions.
+        """
+        serializer = DslDeleteSerializer(data=request.DATA)
+        if serializer.is_valid():
+            user_token = Token.objects.get(key=request.auth)
+            user = UserInfo.objects.get(user_id=user_token.user.user_id)
+            dsl_id = serializer.data['id']
+            r_dsl = replay_dsl_async.delay(user.okeanos_token, dsl_id)
+            task_id = r_dsl.id
+            return Response({"id":dsl_id, "task_id": task_id}, status=status.HTTP_202_ACCEPTED)
+        return Response(serializer.errors)  
     
     def delete(self, request, *args, **kwargs):
         """

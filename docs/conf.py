@@ -23,7 +23,6 @@ import django
 
 sys.path.append(os.path.abspath(os.path.join(os.path.pardir,'webapp', 'backend')))
 from django.conf import settings
-from django.apps import apps as django_apps
 settings.configure()
 django.setup()
 
