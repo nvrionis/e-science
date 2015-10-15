@@ -33,6 +33,7 @@ class SettingsSerializer(serializers.ModelSerializer):
         model = Setting
         fields = ('id', 'section', 'property_name', 'property_value', 'comment')
 
+
 class VreImagesSerializer(serializers.ModelSerializer):
     """
     Serializer for VreImages metadata
@@ -47,6 +48,7 @@ class VreImagesSerializer(serializers.ModelSerializer):
     def category_name(self,obj):
         return VreImageCategory.objects.all().filter(id=obj.image_category_id).values()[0]['category_name']
 
+
 class OrkaImagesSerializer(serializers.ModelSerializer):
     """
     Serializer for OrkaImages metadata
@@ -60,6 +62,7 @@ class OrkaImagesSerializer(serializers.ModelSerializer):
     
     def category_name(self,obj):
         return OrkaImageCategory.objects.all().filter(id=obj.image_category_id).values()[0]['category_name']
+
 
 class NewsSerializer(serializers.ModelSerializer):
     """
@@ -197,7 +200,7 @@ class ClusterInfoSerializer(serializers.ModelSerializer):
                    'cpu_master', 'ram_master', 'disk_master', 'cpu_slaves',
                    'ram_slaves', 'disk_slaves', 'disk_template', 'os_image',
                    'master_IP', 'project_name', 'replication_factor', 'dfs_blocksize', 'task_id', 'state', 'hadoop_status')
-
+ 
        
 class VreServerSerializer(serializers.ModelSerializer):
     """ Serializer for VRE server model."""
@@ -215,6 +218,7 @@ class DslsSerializer(serializers.ModelSerializer):
         model = Dsl
         fields = ('id', 'dsl_name', 'action_date', 'pithos_path', 'cluster_id', 'task_id', 'state')
 
+
 class DslOptionsSerializer(serializers.Serializer):
     """
     Serializer for submitting Reproducible Experiments DSL options
@@ -222,12 +226,14 @@ class DslOptionsSerializer(serializers.Serializer):
     dsl_name = serializers.CharField(required=True)
     pithos_path = serializers.CharField(required=True)
     cluster_id = serializers.IntegerField(required=False)
+   
     
 class DslDeleteSerializer(serializers.Serializer):
     """
     Serializer for submitting Reproducible Experiment metadata delete request
     """
     id = serializers.IntegerField()
+
 
 class UserInfoSerializer(serializers.ModelSerializer):
     """

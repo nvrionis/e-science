@@ -53,7 +53,7 @@ class MainPageView(generic.TemplateView):
 
 class SettingsView(GenericAPIView):
     """
-    View to handle requests for instance settings.
+    Instance settings.
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (AllowAny, )
@@ -67,7 +67,7 @@ class SettingsView(GenericAPIView):
 
 class VreImagesView(GenericAPIView):
     """
-    View to handle requests from ember for VRE image metadata
+    VRE images metadata.
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (AllowAny, )
@@ -84,7 +84,7 @@ class VreImagesView(GenericAPIView):
 
 class OrkaImagesView(GenericAPIView):
     """
-    View to handle requests from ember for VM image metadata
+    Orka image metadata.
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (AllowAny, )
@@ -101,7 +101,7 @@ class OrkaImagesView(GenericAPIView):
 
 class NewsView(GenericAPIView):
     """
-    View to handle requests from ember for public news on homepage
+    News on homepage.
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (AllowAny, )
@@ -118,7 +118,7 @@ class NewsView(GenericAPIView):
 
 class StatisticsView(GenericAPIView):
     """
-    View to handle requests from ember for cluster statistics on homepage
+    Statistics about history on homepage.
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (AllowAny, )
@@ -139,7 +139,7 @@ class StatisticsView(GenericAPIView):
 
 class HdfsView(GenericAPIView):
     """
-    View for handling requests for file transfer to HDFS.
+    File transfer to HDFS.
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (IsAuthenticated, )
@@ -169,7 +169,7 @@ class HdfsView(GenericAPIView):
 
 class JobsView(GenericAPIView):
     """
-    View to get info for celery tasks.
+    Info for celery tasks.
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (IsAuthenticated, )
@@ -198,28 +198,12 @@ class JobsView(GenericAPIView):
 
 class StatusView(GenericAPIView):
     """
-    View to handle requests for retrieving cluster creation parameters
-    from ~okeanos and checking user's choices for cluster creation
-    coming from ember.
+    Create and delete cluster
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (IsAuthenticatedOrIsCreation, )
-    resource_name = 'cluster'
+    resource_name = 'clusterchoice'
     serializer_class = ClusterCreationParamsSerializer
-
-    
-    def get(self, request, *args, **kwargs):
-        """
-        Return a serialized ClusterCreationParams model with information
-        retrieved by kamaki calls. User with corresponding status will be
-        found by the escience token.
-        param3 -- A third parameter
-        """
-        user_token = Token.objects.get(key=request.auth)
-        self.user = UserInfo.objects.get(user_id=user_token.user.user_id)
-        retrieved_cluster_info = project_list_flavor_quota(self.user)
-        serializer = self.serializer_class(retrieved_cluster_info, many=True)
-        return Response(serializer.data)
 
     def put(self, request, *args, **kwargs):
         """
@@ -227,7 +211,6 @@ class StatusView(GenericAPIView):
         Check the parameters with HadoopCluster object from create_cluster
         script.
         """
-        self.resource_name = 'clusterchoice'
         self.serializer_class = ClusterchoicesSerializer
         serializer = self.serializer_class(data=request.DATA)
         if serializer.is_valid():
@@ -274,7 +257,6 @@ class StatusView(GenericAPIView):
         """
         Delete cluster from ~okeanos.
         """
-        self.resource_name = 'clusterchoice'
         self.serializer_class = DeleteClusterSerializer
         serializer = self.serializer_class(data=request.DATA)
         if serializer.is_valid():
@@ -287,9 +269,31 @@ class StatusView(GenericAPIView):
         # correctly.
         return Response(serializer.errors)
 
+class ClustersView(GenericAPIView):
+    """
+    Cluster creation parameters.
+    """
+    authentication_classes = (EscienceTokenAuthentication, )
+    permission_classes = (IsAuthenticatedOrIsCreation, )
+    resource_name = 'clusters'
+    serializer_class = ClusterCreationParamsSerializer
+
+    
+    def get(self, request, *args, **kwargs):
+        """
+        Return a serialized ClusterCreationParams model with information
+        retrieved by kamaki calls. User with corresponding status will be
+        found by the escience token.
+        """
+        user_token = Token.objects.get(key=request.auth)
+        self.user = UserInfo.objects.get(user_id=user_token.user.user_id)
+        retrieved_cluster_info = project_list_flavor_quota(self.user)
+        serializer = self.serializer_class(retrieved_cluster_info, many=True)
+        return Response(serializer.data)
+
 class SessionView(GenericAPIView):
     """
-    View to handle requests from ember for user login and logout and
+    User login and logout and
     user theme update
     """
     authentication_classes = (EscienceTokenAuthentication, )
@@ -352,7 +356,7 @@ class SessionView(GenericAPIView):
             
 class VreServerView(GenericAPIView):
     """
-    View to handle requests for Virtual Research Environment servers.
+    Virtual Research Environment servers creation, deletion and info.
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (IsAuthenticated, )
@@ -411,7 +415,7 @@ class VreServerView(GenericAPIView):
     
 class DslView(GenericAPIView):
     """
-    View to handle requests for User DSL management.
+    User DSL management.
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (IsAuthenticated, )

@@ -11,7 +11,7 @@ from django.conf import settings
 from django.conf.urls import patterns, include, url
 from django.contrib import admin
 from views import SessionView, StatusView, JobsView, HdfsView, MainPageView, SettingsView, \
-StatisticsView, NewsView, OrkaImagesView, VreServerView, VreImagesView, DslView
+StatisticsView, NewsView, OrkaImagesView, VreServerView, VreImagesView, DslView, ClustersView
 admin.site.site_header = "GRNET e-Science Administration"
 admin.site.site_title = admin.site.site_header
 admin.site.index_title = ''
@@ -23,7 +23,7 @@ urlpatterns = patterns('', url(r'^$', MainPageView.as_view()),
                        url(r'^api/vreimages', VreImagesView.as_view(), name='vre_images'),
                        url(r'^admin', include(admin.site.urls)),
                        url(r'^api/users', SessionView.as_view(), name='user_status'),
-                       url(r'^api/clusters', StatusView.as_view(), name='hadoop_clusters'),
+                       url(r'^api/clusters', ClustersView.as_view(), name='hadoop_clusters'),
                        url(r'^api/clusterchoices', StatusView.as_view(), name='list_of_cluster_choices'),
                        url(r'^api/jobs', JobsView.as_view(), name='tasks_list'),
                        url(r'^api/vreservers', VreServerView.as_view(), name='virtual_research_environments'),
