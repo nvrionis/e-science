@@ -5,7 +5,9 @@
 import logging
 import random
 import string
+import subprocess
 import re
+import os.path
 from sys import argv, stdout, stderr
 from kamaki.clients import ClientError
 from kamaki.clients.pithos import PithosClient
@@ -19,6 +21,7 @@ from utils import ClusterRequest, ConnectionError, authenticate_escience, get_us
     read_replication_factor, ssh_stream_from_hadoop, parse_hdfs_dest, get_file_protocol, \
     ssh_pithos_stream_to_hadoop, bytes_to_shorthand, from_hdfs_to_pithos, is_period, is_default_dir, \
     check_credentials, endpoints_and_user_id, init_plankton
+from reproduce_experiment import replay
 from time import sleep
 from requests.exceptions import SSLError
 from ConfigParser import NoSectionError, NoOptionError
@@ -108,6 +111,17 @@ class _ArgCheck(object):
             return val
         else:
             raise ArgumentTypeError(" %s must be at least 8 characters and contain only letters and numbers." % val)
+
+    def valid_file_is(self, val):
+        """
+        :param val: str
+        :return val if val is a valid filename
+        """
+        val = val.replace('~', os.path.expanduser('~'))
+        if os.path.isfile(val):
+            return val
+        else:
+            raise ArgumentTypeError(" %s file does not exist." % val)
 
 
 def task_message(task_id, escience_token, server_url, wait_timer, task='not_progress_bar'):
@@ -232,6 +246,7 @@ class HadoopCluster(object):
         elif opt_vre_destroy == True:
             self.destroy_vre_machine()
         
+
     def create(self):
         """ Method for creating Hadoop clusters in ~okeanos."""
         try:
@@ -256,19 +271,26 @@ class HadoopCluster(object):
             stdout.write("cluster_id: {0}\nmaster_IP: {1}\n"
                          "root password: {2}\n".format(result['cluster_id'], result['master_IP'],
                                                         result['master_VM_password']))
-            if self.opts['admin_password']:
-                if 'CDH' in self.opts['image']:
-                    hue_user = 'hdfs'
-                else:
-                    hue_user = DEFAULT_HADOOP_USER
-                logging.log(SUMMARY, "You can access Hue browser with username {0} and password: {1}\n".format(hue_user, self.opts['admin_password']))
 
+            # find the appropriate user based on the selected image
+            user = 'hdfs' if 'CDH' in self.opts['image'] else DEFAULT_HADOOP_USER
+            
+            # message for accessing Hue
+            if self.opts['admin_password']:
+                logging.log(SUMMARY, "You can access Hue browser with username {0} and password: {1}\n".format(user, self.opts['admin_password']))
+            
+            # inject the public key to both root and user
+            if self.opts['personality']:
+                command = "export SSHPASS=" + result['master_VM_password'] + " && cat " + self.opts['personality'] + " | sshpass -e " + "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@" + result['master_IP'] + " \'" + "cat >> .ssh/authorized_keys\'"
+                subprocess.call(command, stderr=FNULL, shell=True)
+                subprocess.call( "export SSHPASS=" + result['master_VM_password'] + " && sshpass -e " + "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " + "root@" + result['master_IP'] + " \'" + "cat ~/.ssh/authorized_keys >> /home/" + user + "/.ssh/authorized_keys" + "\'", stderr=FNULL, shell=True)
             exit(SUCCESS)
 
         except Exception, e:
             stderr.write('{0}'.format('\r'))
             logging.error(str(e.args[0]))
             exit(error_fatal)
+
 
     def destroy(self):
         """ Method for deleting Hadoop clusters in ~okeanos."""
@@ -293,6 +315,7 @@ class HadoopCluster(object):
             stderr.write('{0}'.format('\r'))
             logging.error(str(e.args[0]))
             exit(error_fatal)
+            
             
     def node_action(self):
         """ Method for performing node actions in a Hadoop cluster in~okeanos."""
@@ -339,6 +362,7 @@ class HadoopCluster(object):
                 else:
                     logging.error('You can perform node actions only on an active cluster.')
                     exit(error_fatal)
+
 
     def hadoop_action(self):
         """ Method for performing an action on a Hadoop cluster"""
@@ -491,14 +515,13 @@ class HadoopCluster(object):
             is_dir = 'application/directory' in object.get('content_type', object.get('content-type', ''))
             is_dir = 'application/folder' in object.get('content_type', object.get('content-type', ''))
             if not is_dir:
-                logging.log(SUMMARY, u"{:>12s} \"pithos:/{:s}/{:s}\"".format(bytes_to_shorthand(object['bytes']),
-                                                              pithos_container,object['name']))
+                print u"{:>12s} \"pithos:/{:s}/{:s}\"".format(bytes_to_shorthand(object['bytes']),
+                                                              pithos_container,object['name'])
 
     def check_hdfs_destination(self, cluster):
         """
         Method checking the HDFS destination argument for existence and type (directory or file).
         """
- 
         parsed_path = parse_hdfs_dest("(.+/)[^/]+$", self.opts['destination'])
         if parsed_path:
             # if directory path ends with filename, checking if both exist
@@ -528,10 +551,10 @@ class HadoopCluster(object):
         else:
             self.check_hdfs_path(cluster['master_IP'], self.opts['destination'], '-e')
 
+
     def put_from_pithos(self, cluster, sourcefile):
         """ Method for transferring Pithos files to HDFS """
         """ Streaming """
- 
         logging.log(SUMMARY, 'Start transferring pithos file to hdfs' )
         pithos_url = ssh_pithos_stream_to_hadoop(DEFAULT_HADOOP_USER, cluster['master_IP'],
                               sourcefile, self.opts['destination'])
@@ -545,6 +568,7 @@ class HadoopCluster(object):
             # cleanup
             ssh_pithos_stream_to_hadoop(DEFAULT_HADOOP_USER, cluster['master_IP'],
                               sourcefile, self.opts['destination'], False)
+
 
     def check_hdfs_path(self, master_IP, dest, option):
         """
@@ -576,7 +600,6 @@ class HadoopCluster(object):
                 tokens = line.split(' ')
                 dfs_remaining = tokens[2]
                 break
- 
         # read replication factor
         replication_factor = read_replication_factor(DEFAULT_HADOOP_USER, cluster['master_IP'])
 
@@ -598,7 +621,6 @@ class HadoopCluster(object):
         Put files from ftp/http server to HDFS. Send a POST request to orka app server to
         copy the ftp/http file to the requested
         """
-
         payload = {"hdfs":{"id": self.opts['cluster_id'], "source": "\'{0}\'".format(self.opts['source']),
                                         "dest": "\'{0}\'".format(self.opts['destination']), "user": self.opts['user'],
                                         "password": self.opts['password']}}
@@ -649,12 +671,12 @@ class HadoopCluster(object):
                 dest_base_folder, dest_top_file_or_folder = os.path.split(destination) # Split the destination path into a pair, (head, tail)
                 if os.path.exists(destination): # Check if destination already exists in os.path
                     if os.path.isfile(destination):
-                        logging.log(SUMMARY, "\'{0}\' already exists.".format(destination))
+                        logging.log(SUMMARY, "\'{0}\' already exists locally.".format(destination))
                         exit(error_fatal)
                     elif os.path.isdir(destination): # Return True if destination refers to an existing directory
                         destination = os.path.join(destination,src_file)
                         if os.path.exists(destination): # Return True if destination is an existing file path
-                            logging.log(SUMMARY, "\'{0}\' already exists.".format(destination))
+                            logging.log(SUMMARY, "\'{0}\' already exists locally.".format(destination))
                             exit(error_fatal)
                 else:
                     try:
@@ -673,9 +695,11 @@ class HadoopCluster(object):
                 logging.log(SUMMARY, 'Start downloading file from HDFS')
                 ssh_stream_from_hadoop(DEFAULT_HADOOP_USER, cluster['master_IP'], # stream file from HDFS to the destination in os.path
                                        source, destination)
+                
             else:
                 logging.error('Source file does not exist.')
                 exit(error_fatal) 
+
             if os.path.exists(destination):
                 logging.log(SUMMARY, 'File downloaded from HDFS.')
             else:
@@ -691,7 +715,6 @@ class UserClusterVreInfo(object):
     sortlist: input a clusters or VREs list of cluster or VRE dictionaries, output a clusters or VREs list respectively sorted according to cluster or VRE key
     list: pretty printer
     """
-
     def __init__(self, opts):
         self.opts = opts
         self.data = list()
@@ -803,8 +826,8 @@ class ImagesInfo(object):
                        
     def list_image(self,image):
         """Method for listing info about one image"""
-        logging.log(SUMMARY, '{0}: {1}'.format('name',image['image_name']))
-        logging.log(SUMMARY, '{0}: {1}\n'.format('pithos uuid',image['image_pithos_uuid']))
+        print '{0}: {1}'.format('name',image['image_name'])
+        print '{0}: {1}\n'.format('pithos uuid',image['image_pithos_uuid'])
             
     
 def main():
@@ -871,6 +894,8 @@ def main():
                                      ' on ~okeanos.')
     parser_node = orka_subparsers.add_parser('node', parents=[common_parser],
                                      help='Operations on a Hadoop-Yarn cluster for adding or deleting a node.')
+    parser_replay = orka_subparsers.add_parser('replay', parents=[common_parser],
+                                     help='Replay an experiment.')
     parser_list = orka_subparsers.add_parser('list', parents=[common_parser],
                                      help='List user clusters.')
     parser_info = orka_subparsers.add_parser('info', parents=[common_parser],
@@ -928,7 +953,10 @@ def main():
                               help='HDFS block size (in MB). Default is 128.')
         parser_create.add_argument("--admin_password", metavar='admin_password', default=auto_generated_pass, type=checker.valid_admin_password_is,
                               help='Admin password for Hue login. Default is auto-generated')
-        
+
+        parser_create.add_argument("--personality", metavar='personality', type=checker.valid_file_is,
+                                   help='Defines a file that includes a public key to be injected to the master VM.')
+
         parser_destroy.add_argument('cluster_id',
                               help='The id of the Hadoop cluster', type=checker.positive_num_is)
         
@@ -1006,6 +1034,9 @@ def main():
         parser_file_put.add_argument('--password',
                               help='Ftp-Http password')
         
+        parser_replay.add_argument('file',
+                              help='The file that describes the experiment to be replayed.')        
+        
         parser_file_mkdir.add_argument('--foo', nargs="?", help=SUPPRESS, default=True, dest='filemkdir')
         parser_file_mkdir.add_argument('cluster_id',
                                        help='The id of the Hadoop cluster', type=checker.positive_num_is)
@@ -1069,6 +1100,8 @@ def main():
                 c_hadoopcluster.vre_action()
         elif verb == 'node':
             c_hadoopcluster.node_action()
+        elif verb == 'replay':
+            replay(opts['file'], opts['token'])
 
     else:
         logging.error('No arguments were given')
