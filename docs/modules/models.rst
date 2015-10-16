@@ -1,4 +1,4 @@
 Models
 ======
-.. automodule:: models
+.. automodule:: backend.models
     :members:

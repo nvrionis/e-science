@@ -196,7 +196,25 @@ class JobsView(GenericAPIView):
 
 class StatusView(GenericAPIView):
     """
-    Cluster Actions
+    Cluster Actions ,                                                                                          
+    Create: input Object 
+    project_name -- "escience.grnet.gr"
+    cluster_name -- "test_cluster01"
+    cluster_size -- 2
+    cpu_master -- 2 
+    ram_master --2048 
+    disk_master --10 
+    cpu_slaves -- 2
+    ram_slaves -- 2048 
+    disk_slaves -- 10
+    disk_template -- "Standard" 
+    os_choice -- "Hadoop-2.5.2" 
+    ssh_key_selection -- "nick_key"
+    replication_factor -- "1" 
+    dfs_blocksize -- "128" 
+    admin_password -- "" 
+    cluster_edit -- null
+    Response -- Object {id : 1 , task_id:"3be2fe85-bf8a-4a41-935b-067f0c80bfe7"}
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (IsAuthenticatedOrIsCreation, )
@@ -269,7 +287,45 @@ class StatusView(GenericAPIView):
 
 class ClustersView(GenericAPIView):
     """
-    Cluster creation parameters.
+    Cluster creation parameters. Example.
+    id -- 2
+    
+    user_id -- 1
+    
+    project_name -- escience.grnet.gr
+    
+    vms_max --25
+    
+    vms_av -- Array [0:1, 1:2, 2:3, 3:4, 4:5, 5:6, 6:7, 7:8]
+    
+    cpu_max -- 50
+    
+    cpu_av -- 34
+    
+    ram_max -- 61440
+    
+    ram_av -- 45056
+    
+    disk_max -- 400
+    
+    disk_av -- 300
+    
+    net_av -- 6
+
+    floatip_av -- 10
+    
+    cpu_choices -- Array [0:1, 1:2, 2:4, 3:8]
+    
+    ram_choices -- Array [0:512, 1:1024, 2:2048, 3:4096, 4:6144, 5:8192]
+
+    disk_choices -- Array [0:5, 1:10, 2:20, 3:40, 4:60]
+
+    disk_template -- Array [0:"Standard"]
+
+    os_choices -- Array [0:Array[0: "Debian Base", 1: "Cloudera-CDH-5.4.4", 2: "Ecosystem-on-Hue-3.8.0", 3: "Hue-3.8.0", 4: "Hadoop-2.5.2"], 1:Array[0:"BigBlueButton-0.81", 1:"Drupal-7.37", 2:"Mediawiki-1.2.4", 3:"Redmine-3.0.4", 4:"DSpace-5.3"]]
+    
+    ssh_keys_names -- Array [0:nick_key]
+
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (IsAuthenticatedOrIsCreation, )
@@ -415,17 +471,10 @@ class VreServerView(GenericAPIView):
 class DslView(GenericAPIView):
     """
     User DSL management.
-    
-    param1 -- A first parameter
-    param1 -- A first parameter    
-    param1 -- A first parameter
-    param1 -- A first parameter
-    
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (IsAuthenticated, )
     resource_name = 'dsl'
-    serializer_class = DslsSerializer
     model = Dsl
     
     def post(self, request, *args, **kwargs):
@@ -472,6 +521,7 @@ class DslView(GenericAPIView):
         """
         user_token = Token.objects.get(key=request.auth)
         self.user = UserInfo.objects.get(user_id=user_token.user.user_id)
+        serializer_class = DslsSerializer
         serializer = self.serializer_class(data=request.DATA, many=True)
         return Response(serializer.data)
     
