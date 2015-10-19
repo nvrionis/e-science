@@ -62,13 +62,6 @@ App.VreserverManagementController = Ember.Controller.extend({
     }.property('vre_access_url'),
     	
 	actions : {
-		// Back action when in vreserver management -> redirect to user's welcome screen
-		back : function() {
-		    var that = this;
-			this.get('controllers.userWelcome').send('setActiveTab','clusters');
-			// redirect to welcome
-			Ember.run.next(function(){that.transitionToRoute('user.welcome');});
-		},
         setActiveTab : function(tab){
             this.set('content_tabs',tab);  
         },		
