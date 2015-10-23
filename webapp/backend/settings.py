@@ -58,10 +58,8 @@ INSTALLED_APPS = (
     'rest_framework',
     'rest_framework_ember',
     'rest_framework.authtoken',
-    'rest_framework_docs',
     'djcelery',
     'backend',
-    'rest_framework_swagger',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -111,21 +109,6 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.BrowsableAPIRenderer',
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': [],
-}
-
-
-SWAGGER_SETTINGS = {
-    "exclude_namespaces": [],    # List URL namespaces to ignore
-    "api_version": '0.1.10',  # Specify your API's version (optional)
-    "token_type": 'token',
-    "enabled_methods": [  # Methods to enable in UI
-        'get',
-        'post',
-        'put',
-        'patch',
-        'delete'
-    ],
-    "is_authenticated": False
 }
 
 # By default Django expects a trailing slash on urls and will 301 redirect

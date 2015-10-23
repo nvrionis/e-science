@@ -793,13 +793,12 @@ class UserClusterVreInfo(object):
                         fmt_string = '{:<10}' + key + ': ' + custom_date_format(sorted_cluster_or_vre[key])
                     else:
                         fmt_string = '{:<10}' + key + ': {' + key + '}'
-                    logging.log(SUMMARY, fmt_string.format('',**sorted_cluster_or_vre))
-                logging.log(SUMMARY, '')
+                    print fmt_string.format('',**sorted_cluster_or_vre)
+                print ''
             if count == 0:
-                logging.warning( 'No {0}(s) found matching those options.'.format(type))
+                print 'No {0}(s) found matching those options.'.format(type)
         else:
-            logging.warning( 'No user {0} Information available.'.format(type))
-
+            print 'No user {0} Information available.'.format(type)
 
 class ImagesInfo(object):
     """ Class holding info for available images"""

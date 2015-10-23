@@ -1,1 +1,0 @@
-Search.setIndex({envversion:46,terms:{index:0,models_info:[],modul:0,search:0,content:0,model:[],page:0},objtypes:{},objnames:{},filenames:["index","modules/models"],titles:["Welcome to orka&#8217;s documentation!","Models"],objects:{},titleterms:{models_info:[],welcom:0,orka:0,indic:0,tabl:0,model:1,document:0}})

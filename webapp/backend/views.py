@@ -91,7 +91,7 @@ class OrkaImagesView(GenericAPIView):
     
     def get(self, request, *args, **kwargs):
         """
-        Return news items.
+        Return orka image data.
         """
         image_data = OrkaImage.objects.all()
         serializer_class = OrkaImagesSerializer(image_data, many=True)

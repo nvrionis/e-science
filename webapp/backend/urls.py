@@ -29,9 +29,7 @@ urlpatterns = patterns('', url(r'^$', MainPageView.as_view()),
                        url(r'^api/vreservers', VreServerView.as_view(), name='virtual_research_environments'),
                        url(r'^api/dsls', DslView.as_view(), name='reproducible_experiements'),
                        url(r'^api/hdfs', HdfsView.as_view(), name='hdfs_actions'),
-                       url(r'^api/settings', SettingsView.as_view(), name='settings'),
-                       url(r'^rest-api/', include('rest_framework_docs.urls')),
-                       url(r'^docs/', include('rest_framework_swagger.urls'))
+                       url(r'^api/settings', SettingsView.as_view(), name='settings')
                        )
 
 # if settings.DEBUG:
