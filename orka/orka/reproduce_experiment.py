@@ -94,7 +94,7 @@ def enforce_actions(script, cluster_id, master_IP):
     for action in script["actions"]:
         if action in ["start", "stop", "format"]:
             cmd = "orka hadoop " + action + " " + str(cluster_id)
-            print ("- Action: Hadoop " + action + '( ' + cmd +' )')
+            print ("- Action: Hadoop " + action + ' ( ' + cmd +' )')
             try:
                 response = subprocess.check_output(cmd, shell=True)
                 print response
@@ -110,7 +110,7 @@ def enforce_actions(script, cluster_id, master_IP):
             params = params_string.strip(' ()')
             action_params = params.split(',')
             cmd = "orka file put " + str(cluster_id) + " " + action_params[0] + " " + action_params[1]
-            print ("- Action: Uploading file to HDFS"  + '( ' + cmd +' )')
+            print ("- Action: Uploading file to HDFS"  + ' ( ' + cmd +' )')
             try:
                 response = subprocess.check_output(cmd, shell=True)
                 print response  
@@ -126,7 +126,7 @@ def enforce_actions(script, cluster_id, master_IP):
             params = params_string.strip(' ()')
             action_params = params.split(',')
             cmd = "orka file get " + str(cluster_id) + " " + action_params[0] + " " + action_params[1]
-            print ("- Action: Retrieving file from HDFS" + '( ' + cmd +' )')
+            print ("- Action: Retrieving file from HDFS" + ' ( ' + cmd +' )')
             try:
                 response = subprocess.check_output(cmd, shell=True)
                 print response  
@@ -139,7 +139,7 @@ def enforce_actions(script, cluster_id, master_IP):
             print ''
         if action == 'node_add':            
             cmd = "orka node add " + str(cluster_id)
-            print ("- Action: Adding node to hadoop" + '( ' + cmd +' )')
+            print ("- Action: Adding node to hadoop" + ' ( ' + cmd +' )')
             try:
                 response = subprocess.check_output(cmd, shell=True)
                 print response  
@@ -152,7 +152,7 @@ def enforce_actions(script, cluster_id, master_IP):
             print ''
         if action == 'node_remove':
             cmd = "orka node remove " + str(cluster_id)
-            print ("- Action: Removing node from hadoop" + '( ' + cmd +' )')
+            print ("- Action: Removing node from hadoop" + ' ( ' + cmd +' )')
             try:
                 response = subprocess.check_output(cmd, shell=True)
                 print response  
@@ -166,7 +166,7 @@ def enforce_actions(script, cluster_id, master_IP):
         if action.startswith("local_cmd"):
             params_string = action.strip('local_cmd')
             cmd = params_string.strip(' ()')
-            print ("- Action: Local command " + "( " + cmd + " )")
+            print ("- Action: Local command " + " ( " + cmd + " )")
             try:
                 response = subprocess.check_output(cmd, shell=True)
                 print response  
@@ -189,7 +189,7 @@ def run_job(action, master_IP):
     user = action_params[0]
     job = action_params[1].strip('\" ')
     
-    print ("- Action: Running job")
+    print ("- Action: Running job" + " ( " + job + " )")
     try:
         response = subprocess.call( "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " 
                                 + user + "@" + master_IP + " \'" 

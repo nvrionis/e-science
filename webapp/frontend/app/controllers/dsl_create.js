@@ -81,6 +81,7 @@ App.DslCreateController = Ember.Controller.extend({
         alert_missing_input_dsl_source : 'Please select a cluster to save config metadata from',
         alert_missing_input_dsl_name : 'Please type in or generate default metadata filename',
         alert_missing_input_pithos_path : 'Please type in or generate default pithos container/path',
+        alert_error_input_pithos_path : 'alert_error_input_pithos_path',
     },
     missing_input : function(that, new_dsl){
         var self = that; // get the controller reference into self
@@ -144,9 +145,7 @@ App.DslCreateController = Ember.Controller.extend({
                         'msg_text' : 'Failed to create file \"%@\" in %@ %@'.fmt(dsl_name,pithos_path, error_msg)
                     };
                     self.get('controllers.userWelcome').send('addMessage', msg);
-                    self.get('controllers.userWelcome').set('create_cluster_start', true);
-                    self.get('controllers.userWelcome').send('setActiveTab','dsls');
-                    Ember.run.next(function(){self.transitionToRoute('user.welcome');});
+                    self.set('alert_error_input_pithos_path', msg['msg_text']);
                 });
             }, function(reason) {
                 //error
