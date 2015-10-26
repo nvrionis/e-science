@@ -24,7 +24,7 @@ from datetime import datetime
 from cluster_errors_constants import *
 from celery import current_task
 from authenticate_user import unmask_token, encrypt_key
-from django_db_after_login import db_cluster_update, get_user_id, db_server_update, db_hadoop_update, db_dsl_create, db_dsl_update, db_dsl_delete
+from django_db_after_login import db_cluster_update, db_cluster_delete, get_user_id, db_server_update, db_hadoop_update, db_dsl_create, db_dsl_update, db_dsl_delete
 from backend.models import UserInfo, ClusterInfo, VreServer, Dsl, OrkaImage, VreImage
 
 
@@ -368,22 +368,22 @@ def replay_dsl(token, id):
         for action in actions:
             cluster = ClusterInfo.objects.get(id=cluster_id_for_replay)
             for cmd,params in action.iteritems():
-                if cmd in ["start","stop","format"]: # TODO skip action based on current cluster.cluster_status, cluster.hadoop_status?
+                if cmd in ["start","stop","format"]:
                     msg = 'Action: Hadoop %s' % cmd
                     current_task.update_state(state=msg)
                     db_dsl_update(token,id,dsl_status=const_experiment_status_replay,state=msg)
                     ansible_manage_cluster(cluster_id_for_replay,cmd)
-                elif cmd == "node_add": # TODO current cluster_status, hadoop_status checking
+                elif cmd == "node_add":
                     msg = 'Action: Cluster %s' % cmd
                     current_task.update_state(state=msg)
                     db_dsl_update(token,id,dsl_status=const_experiment_status_replay,state=msg)
                     scale_cluster(token, cluster_id_for_replay, 1)
-                elif cmd == "node_remove": # TODO current cluster_status, hadoop_status checking
+                elif cmd == "node_remove":
                     msg = 'Action: Cluster %s' % cmd
                     current_task.update_state(state=msg)
                     db_dsl_update(token,id,dsl_status=const_experiment_status_replay,state=msg)
                     scale_cluster(token, cluster_id_for_replay, -1)
-                elif cmd == "put": # TODO check source is valid for orka-Web (pithos or other online source)
+                elif cmd == "put": # TODO check source is valid for orka-Web (pithos only)
                     source, destination = params.strip('()').split(',')
                     msg = 'Action: HDFS %s with source %s and destination %s' % (cmd,source,destination)
                     current_task.update_state(state=msg)
@@ -398,13 +398,30 @@ def replay_dsl(token, id):
                     print "get from %s to %s" % (source,destination) # TODO pending implementation
                     sleep(10)
                 elif cmd == "run_job":
+                    from backend.reroute_ssh import establish_connect, exec_command, MASTER_SSH_PORT
                     remote_user, remote_cmd = params.strip('()').split(',')
+                    remote_cmd = remote_cmd.strip('\" ')
+                    try:
+                        ssh_client = establish_connect(cluster.master_IP,remote_user,'',MASTER_SSH_PORT)
+                    except RuntimeError, e:
+                        msg = 'Failed connecting to %s as %s' % (cluster.master_IP, remote_user)
+                        current_task.update_state(state=msg)
+                        db_dsl_update(token,id,dsl_status=const_experiment_status_atrest,state=msg)
+                        raise ClientError(msg,error_ssh_client)
                     msg = 'Action: Hadoop %s with command %s as remote user %s' % (cmd,remote_cmd,remote_user)
                     current_task.update_state(state=msg)
                     db_dsl_update(token,id,dsl_status=const_experiment_status_replay,state=msg)
-                    print "run cmd %s as remote user: %s" % (remote_cmd, remote_user) # TODO pending implementation
-                    sleep(10)
-    
+                    try:
+                        ex_status = exec_command(ssh_client,remote_cmd, command_state='celery task')
+                    except Exception, e:
+                        msg = 'Action Error: %s' % str(e.args[0])
+                        current_task.update_state(state=msg)
+                        db_dsl_update(token,id,dsl_status=const_experiment_status_atrest,state=msg)
+                        raise ClientError(msg,error_ssh_client)
+                    msg = 'Action Succeeded'
+                    current_task.update_state(state=msg)
+                    db_dsl_update(token,id,dsl_status=const_experiment_status_replay,state=msg)
+                    
     current_task.update_state(state='')
     db_dsl_update(token,id,dsl_status=const_experiment_status_atrest,state='')
     return dsl.id
@@ -575,12 +592,17 @@ def scale_cluster(token, cluster_id, cluster_delta, status='Pending'):
     """
     from reroute_ssh import reroute_ssh_to_slaves
     from run_ansible_playbooks import modify_ansible_hosts_file,ansible_scale_cluster,ansible_manage_cluster
-    current_task.update_state(state="Started")
     cluster_to_scale = ClusterInfo.objects.get(id=cluster_id)
     pre_scale_size = cluster_to_scale.cluster_size
     previous_cluster_status = cluster_to_scale.cluster_status
     previous_hadoop_status = cluster_to_scale.hadoop_status
     status_map = {"0":"Destroyed","1":"Active","2":"Pending","3":"Failed"}
+    # pre-flight checks. If cluster status is pending or hadoop status formatting abort.
+    if (previous_cluster_status == const_cluster_status_pending) or (previous_hadoop_status == const_hadoop_status_format):
+        current_task.update_state(state="Skipping")
+        return cluster_to_scale.cluster_name
+    # pre-flight checks done
+    current_task.update_state(state="Started")
     auth = check_credentials(unmask_token(encrypt_key,token))
     current_task.update_state(state="Authenticated")
     endpoints, user_id = endpoints_and_user_id(auth)
@@ -694,9 +716,21 @@ def destroy_cluster(token, cluster_id, master_IP='', status='Destroyed'):
     that belong to the cluster from the cluster id that is given. Cluster id
     is the unique integer that each cluster has in escience database.
     """
+    cluster_to_delete = ClusterInfo.objects.get(id=cluster_id)
+    cluster_name = cluster_to_delete.cluster_name
+    # status is already destroyed or failed, only clean up database 
+    if cluster_to_delete.cluster_status not in [const_cluster_status_active,const_cluster_status_pending]:
+        current_task.update_state(state="Removing Record")
+        try:
+            db_cluster_delete(token,cluster_id)
+            current_task.update_state(state="Cluster Record Removed")
+            return cluster_name
+        except Exception,e:
+            msg = str(e.args[0])
+            raise ClientError(msg, error_cluster_corrupt)
+    # cluster exists on cyclades, operate on ~okeanos infrastructure for removal, update database
     current_task.update_state(state="Started")
     servers_to_delete = []
-    cluster_to_delete = ClusterInfo.objects.get(id=cluster_id)
     if cluster_to_delete.master_IP:
         float_ip_to_delete = cluster_to_delete.master_IP
     else:
@@ -748,7 +782,6 @@ def destroy_cluster(token, cluster_id, master_IP='', status='Destroyed'):
             if attachment['network_id'] == network_to_delete_id:
                 servers_to_delete.append(server)
                 break
-    cluster_name = cluster_to_delete.cluster_name
     number_of_nodes = len(servers_to_delete)
     set_cluster_state(token, cluster_id, "Starting deletion of requested cluster")
     # Start cluster deleting

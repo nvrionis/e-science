@@ -7,7 +7,7 @@ Views for django rest framework .
 @author: e-science Dev-team
 """
 import logging
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, GenericAPIView
+from rest_framework.generics import  GenericAPIView
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -31,9 +31,6 @@ from create_cluster import YarnCluster
 from celery.result import AsyncResult
 from reroute_ssh import HdfsRequest
 from okeanos_utils import check_pithos_path, check_pithos_object_exists, get_pithos_container_info
-from rest_framework.decorators import api_view
-
-
 from django.db import models
 
 
@@ -122,7 +119,7 @@ class StatisticsView(GenericAPIView):
     permission_classes = (AllowAny, )
     resource_name = 'statistic'
     serializer_class = StatisticsSerializer
-    
+
     def get(self, request, *args, **kwargs):
         """
         Return cluster statistics for all users from database.
@@ -376,7 +373,7 @@ class SessionView(GenericAPIView):
         serializer = self.serializer_class(data=request.DATA)
         if serializer.is_valid():
             token = serializer.data['token']
-            if check_user_credentials(token) == AUTHENTICATED:
+            if check_user_credentials(token) == AUTHENTICATED and check_user_uuid(token) == 0:
                 self.user = db_after_login(token)
                 self.serializer_class = UserInfoSerializer(self.user)
                 return Response(self.serializer_class.data)

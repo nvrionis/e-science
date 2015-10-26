@@ -6,10 +6,12 @@
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
 		<meta name="description" content="e-Science Orka the hadoop cluster creator">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
-
-		<link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}styles/bootstrap.orka.css"/>
+        
+		<link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}styles/bootstrap.orka.css">
 		<link rel="stylesheet" href="{{ STATIC_URL }}styles/style.css">
 		<link rel="stylesheet" href="{{ STATIC_URL }}libs/prettify.css">
+		<link rel="shortcut icon" href="{{ STATIC_URL }}favicon.ico">
+		<link rel="icon" href="{{ STATIC_URL }}favicon.ico" type="image/x-icon">
 	</head>
 	<body class="" style="" onload="set_style_from_cookie()">
 		{% verbatim %}
@@ -76,6 +78,7 @@
 		<script src="{{ STATIC_URL }}routes/homepage.js"></script>
 		
 		<!--views-->
+		<script src="{{ STATIC_URL }}views/application.js"></script>
 		<script src="{{ STATIC_URL }}views/homepage.js"></script>
 		<script src="{{ STATIC_URL }}views/user_login.js"></script>
 		<script src="{{ STATIC_URL }}views/user_welcome.js"></script>
