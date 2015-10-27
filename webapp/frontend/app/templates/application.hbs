@@ -57,7 +57,7 @@
                         <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="id_about_dd">About <b class="caret"></b></a>
                         <ul class="dropdown-menu">                          
                             <li>
-                                {{#link-to 'about.orka' id="id_about_orka"}}<img src="{{unbound STATIC_URL}}images/favicon.ico"/>ORKA</a>{{/link-to}}
+                                {{#link-to 'about.orka' id="id_about_orka"}}<img src="{{unbound STATIC_URL}}images/orkaicon.png" width="14em" height="auto"/>ORKA</a>{{/link-to}}
                             </li>
                             <li>
                                 {{#link-to 'about.faq' id="id_about_faq"}}<i class="glyphicon glyphicon-question-sign"></i> Frequently Asked Questions</a>{{/link-to}}
@@ -114,11 +114,13 @@
 		<div class="row">
 			<div class="col-lg-12">
 				<ul class="list-inline list-unstyled">
-					<li class="termslink pull-right text-muted">
-						<a href="https://accounts.okeanos.grnet.gr/ui/approval_terms" target="_blank">Terms
-						of
-						use</a>
+					<li class="pull-right text-muted">
+						<a href="https://accounts.okeanos.grnet.gr/ui/approval_terms" target="_blank">Terms of use</a>
 					</li>
+					<span class="pull-right text text-muted" style="vertical-align: middle">&#124;</span>
+                    <li class="pull-right text-muted">
+                        <a href="https://github.com/grnet/e-science" target="_blank">Github Repo</a>
+                    </li>
 					<li>
 						<a href="http://europa.eu/" target="_blank" title="European Union"><img src="{{unbound STATIC_URL}}images/european_union.png"
 						alt="European Union"
@@ -132,6 +134,11 @@
 						<a href="http://www.espa.gr/en/Pages/Default.aspx" target="_blank" title="NSRF"><img src="{{unbound STATIC_URL}}images/NSRF.png"
 						alt="NSRF"
 						height="30"></a>
+					</li>
+					<li>
+					    <a href="https://www.grnet.gr/" target="_blank" title="GRNET"><img src="{{unbound STATIC_URL}}images/grnet_logo.png"
+				        alt="GRNET"
+				        height="30"></a>
 					</li>
 				</ul>
 				<p class="text-muted">

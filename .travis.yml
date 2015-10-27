@@ -16,13 +16,13 @@ install:
 - pip install psycopg2
 - pip install djangorestframework
 - pip install rest_framework_ember
-- pip install django-admin-bootstrapped
 - pip install selenium
 - pip install mock
 - pip install rednose
 - pip install nose-cov
 - pip install requests
 - pip install django-celery
+- pip install django-admin-bootstrapped
 - sudo apt-get install sshpass
 - sudo apt-get install shunit2
 before_script:

@@ -20,7 +20,7 @@ from backend.models import *
 from serializers import OkeanosTokenSerializer, UserInfoSerializer, \
     ClusterCreationParamsSerializer, ClusterchoicesSerializer, \
     DeleteClusterSerializer, TaskSerializer, UserThemeSerializer, \
-    HdfsSerializer, StatisticsSerializer, NewsSerializer, SettingsSerializer, \
+    HdfsSerializer, StatisticsSerializer, NewsSerializer, FaqSerializer, SettingsSerializer, \
     OrkaImagesSerializer, VreImagesSerializer, DslsSerializer, DslOptionsSerializer, DslDeleteSerializer
 from django_db_after_login import *
 from cluster_errors_constants import *
@@ -110,6 +110,23 @@ class NewsView(GenericAPIView):
         public_news = PublicNewsItem.objects.all()
         serializer_class = NewsSerializer(public_news, many=True)
         return Response(serializer_class.data)
+    
+class FaqView(GenericAPIView):
+    """
+    View to handle requests for Frequently Asked Question items
+    """
+    authentication_classes = (EscienceTokenAuthentication, )
+    permission_classes = (AllowAny, )
+    resource_name = 'faqitem'
+    
+    def get(self, request, *args, **kwargs):
+        """
+        Return faq items.
+        """
+        faq_items = FaqItem.objects.all()
+        serializer_class = FaqSerializer(faq_items, many=True)
+        return Response(serializer_class.data)
+    
 
 class StatisticsView(GenericAPIView):
     """

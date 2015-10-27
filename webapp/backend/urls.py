@@ -11,7 +11,7 @@ from django.conf import settings
 from django.conf.urls import patterns, include, url
 from django.contrib import admin
 from views import SessionView, StatusView, JobsView, HdfsView, MainPageView, SettingsView, \
-StatisticsView, NewsView, OrkaImagesView, VreServerView, VreImagesView, DslView, ClustersView
+StatisticsView, NewsView, FaqView, OrkaImagesView, VreServerView, VreImagesView, DslView, ClustersView
 admin.site.site_header = "GRNET e-Science Administration"
 admin.site.site_title = admin.site.site_header
 admin.site.index_title = ''
@@ -19,6 +19,7 @@ admin.site.index_title = ''
 urlpatterns = patterns('', url(r'^$', MainPageView.as_view()),
                        url(r'^api/statistics', StatisticsView.as_view(), name='statistics_of_service'),
                        url(r'^api/newsitems', NewsView.as_view(), name='news_list'),
+                       url(r'^api/faqitems', FaqView.as_view()),
                        url(r'^api/orkaimages', OrkaImagesView.as_view(), name='orka_images'),
                        url(r'^api/vreimages', VreImagesView.as_view(), name='vre_images'),
                        url(r'^admin', include(admin.site.urls)),
