@@ -7,7 +7,6 @@ Views for django rest framework .
 @author: e-science Dev-team
 """
 import logging
-from rest_framework.generics import  GenericAPIView
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -19,7 +18,7 @@ from get_flavors_quotas import project_list_flavor_quota
 from backend.models import *
 from serializers import OkeanosTokenSerializer, UserInfoSerializer, \
     ClusterCreationParamsSerializer, ClusterchoicesSerializer, \
-    DeleteClusterSerializer, TaskSerializer, UserThemeSerializer, \
+    DeleteClusterSerializer, TaskSerializer, UserPutSerializer, \
     HdfsSerializer, StatisticsSerializer, NewsSerializer, FaqSerializer, SettingsSerializer, \
     OrkaImagesSerializer, VreImagesSerializer, DslsSerializer, DslOptionsSerializer, DslDeleteSerializer
 from django_db_after_login import *
@@ -30,8 +29,7 @@ from tasks import create_cluster_async, destroy_cluster_async, scale_cluster_asy
 from create_cluster import YarnCluster
 from celery.result import AsyncResult
 from reroute_ssh import HdfsRequest
-from okeanos_utils import check_pithos_path, check_pithos_object_exists, get_pithos_container_info
-from django.db import models
+from replay_support import check_pithos_path, check_pithos_object_exists, get_pithos_container_info
 
 
 logging.addLevelName(REPORT, "REPORT")
@@ -46,28 +44,27 @@ class MainPageView(generic.TemplateView):
     """Load the template file"""
     template_name = 'index.html'
 
-class SettingsView(GenericAPIView):
+class SettingsView(APIView):
     """
-    Instance settings.
+    View to handle requests for instance settings.
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (AllowAny, )
     resource_name = 'setting'
-    serializer_class = SettingsSerializer
     
     def get(self, request, *args, **kwargs):
         settings = Setting.objects.all()
         serializer_class = SettingsSerializer(settings, many=True)
         return Response(serializer_class.data)
 
-class VreImagesView(GenericAPIView):
+
+class VreImagesView(APIView):
     """
-    VRE images metadata.
+    View to handle requests from ember for VRE image metadata
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (AllowAny, )
     resource_name = 'vreimage'
-    serializer_class = VreImagesSerializer
 
     def get(self, request, *args, **kwargs):
         """
@@ -77,31 +74,29 @@ class VreImagesView(GenericAPIView):
         serializer_class = VreImagesSerializer(image_data, many=True)
         return Response(serializer_class.data)
 
-class OrkaImagesView(GenericAPIView):
+class OrkaImagesView(APIView):
     """
-    Orka image metadata.
+    View to handle requests from ember for VM image metadata
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (AllowAny, )
     resource_name = 'orkaimage'
-    serializer_class = OrkaImagesSerializer
-    
+
     def get(self, request, *args, **kwargs):
         """
-        Return orka image data.
+        Return news items.
         """
         image_data = OrkaImage.objects.all()
         serializer_class = OrkaImagesSerializer(image_data, many=True)
         return Response(serializer_class.data)
 
-class NewsView(GenericAPIView):
+class NewsView(APIView):
     """
-    News on homepage.
+    View to handle requests from ember for public news on homepage
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (AllowAny, )
     resource_name = 'newsitem'
-    serializer_class = NewsSerializer
 
     def get(self, request, *args, **kwargs):
         """
@@ -111,7 +106,7 @@ class NewsView(GenericAPIView):
         serializer_class = NewsSerializer(public_news, many=True)
         return Response(serializer_class.data)
     
-class FaqView(GenericAPIView):
+class FaqView(APIView):
     """
     View to handle requests for Frequently Asked Question items
     """
@@ -128,14 +123,13 @@ class FaqView(GenericAPIView):
         return Response(serializer_class.data)
     
 
-class StatisticsView(GenericAPIView):
+class StatisticsView(APIView):
     """
-    Statistics about history on homepage.
+    View to handle requests from ember for cluster statistics on homepage
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (AllowAny, )
     resource_name = 'statistic'
-    serializer_class = StatisticsSerializer
 
     def get(self, request, *args, **kwargs):
         """
@@ -144,14 +138,20 @@ class StatisticsView(GenericAPIView):
         destroyed_clusters = ClusterInfo.objects.all().filter(cluster_status=0).count()
         active_clusters = ClusterInfo.objects.all().filter(cluster_status=1).count()
         spawned_clusters = active_clusters + destroyed_clusters
-        cluster_statistics = ClusterStatistics.objects.create(spawned_clusters=spawned_clusters,
-                                                             active_clusters=active_clusters)
-        serializer_class = StatisticsSerializer(cluster_statistics)
+        destroyed_vres = VreServer.objects.all().filter(server_status=0).count()
+        active_vres = VreServer.objects.all().filter(server_status=1).count()
+        spawned_vres = active_vres + destroyed_vres
+        orka_statistics = OrkaStatistics.objects.create(spawned_clusters=spawned_clusters,
+                                                             active_clusters=active_clusters,
+                                                             spawned_vres=spawned_vres,
+                                                             active_vres=active_vres)
+        serializer_class = StatisticsSerializer(orka_statistics)
         return Response(serializer_class.data)
 
-class HdfsView(GenericAPIView):
+
+class HdfsView(APIView):
     """
-    File transfer to HDFS.
+    View for handling requests for file transfer to HDFS.
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (IsAuthenticated, )
@@ -179,9 +179,10 @@ class HdfsView(GenericAPIView):
         # correctly.
         return Response(serializer.errors)
 
-class JobsView(GenericAPIView):
+
+class JobsView(APIView):
     """
-    Info for celery tasks.
+    View to get info for celery tasks.
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (IsAuthenticated, )
@@ -208,32 +209,30 @@ class JobsView(GenericAPIView):
                 return Response({'state': c_task.state})
         return Response(serializer.errors)
 
-class StatusView(GenericAPIView):
+
+class StatusView(APIView):
     """
-    Cluster Actions ,                                                                                          
-    Create: input Object 
-    project_name -- "escience.grnet.gr"
-    cluster_name -- "test_cluster01"
-    cluster_size -- 2
-    cpu_master -- 2 
-    ram_master --2048 
-    disk_master --10 
-    cpu_slaves -- 2
-    ram_slaves -- 2048 
-    disk_slaves -- 10
-    disk_template -- "Standard" 
-    os_choice -- "Hadoop-2.5.2" 
-    ssh_key_selection -- "nick_key"
-    replication_factor -- "1" 
-    dfs_blocksize -- "128" 
-    admin_password -- "" 
-    cluster_edit -- null
-    Response -- Object {id : 1 , task_id:"3be2fe85-bf8a-4a41-935b-067f0c80bfe7"}
+    View to handle requests for retrieving cluster creation parameters
+    from ~okeanos and checking user's choices for cluster creation
+    coming from ember.
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (IsAuthenticatedOrIsCreation, )
-    resource_name = 'clusterchoice'
+    resource_name = 'cluster'
     serializer_class = ClusterCreationParamsSerializer
+
+    def get(self, request, *args, **kwargs):
+        """
+        Return a serialized ClusterCreationParams model with information
+        retrieved by kamaki calls. User with corresponding status will be
+        found by the escience token.
+        """
+        user_token = Token.objects.get(key=request.auth)
+        self.user = UserInfo.objects.get(user_id=user_token.user.user_id)
+        retrieved_cluster_info = project_list_flavor_quota(self.user)
+        serializer = self.serializer_class(retrieved_cluster_info, many=True)
+        return Response(serializer.data)
+
 
     def put(self, request, *args, **kwargs):
         """
@@ -241,6 +240,7 @@ class StatusView(GenericAPIView):
         Check the parameters with HadoopCluster object from create_cluster
         script.
         """
+        self.resource_name = 'clusterchoice'
         self.serializer_class = ClusterchoicesSerializer
         serializer = self.serializer_class(data=request.DATA)
         if serializer.is_valid():
@@ -283,10 +283,12 @@ class StatusView(GenericAPIView):
         # correctly.
         return Response(serializer.errors)
 
+
     def delete(self, request, *args, **kwargs):
         """
         Delete cluster from ~okeanos.
         """
+        self.resource_name = 'clusterchoice'
         self.serializer_class = DeleteClusterSerializer
         serializer = self.serializer_class(data=request.DATA)
         if serializer.is_valid():
@@ -299,70 +301,10 @@ class StatusView(GenericAPIView):
         # correctly.
         return Response(serializer.errors)
 
-class ClustersView(GenericAPIView):
+
+class SessionView(APIView):
     """
-    Cluster creation parameters. Example.
-    id -- 2
-    
-    user_id -- 1
-    
-    project_name -- escience.grnet.gr
-    
-    vms_max --25
-    
-    vms_av -- Array [0:1, 1:2, 2:3, 3:4, 4:5, 5:6, 6:7, 7:8]
-    
-    cpu_max -- 50
-    
-    cpu_av -- 34
-    
-    ram_max -- 61440
-    
-    ram_av -- 45056
-    
-    disk_max -- 400
-    
-    disk_av -- 300
-    
-    net_av -- 6
-
-    floatip_av -- 10
-    
-    cpu_choices -- Array [0:1, 1:2, 2:4, 3:8]
-    
-    ram_choices -- Array [0:512, 1:1024, 2:2048, 3:4096, 4:6144, 5:8192]
-
-    disk_choices -- Array [0:5, 1:10, 2:20, 3:40, 4:60]
-
-    disk_template -- Array [0:"Standard"]
-
-    os_choices -- Array [0:Array[0: "Debian Base", 1: "Cloudera-CDH-5.4.4", 2: "Ecosystem-on-Hue-3.8.0", 3: "Hue-3.8.0", 4: "Hadoop-2.5.2"], 1:Array[0:"BigBlueButton-0.81", 1:"Drupal-7.37", 2:"Mediawiki-1.2.4", 3:"Redmine-3.0.4", 4:"DSpace-5.3"]]
-    
-    ssh_keys_names -- Array [0:nick_key]
-
-    """
-    authentication_classes = (EscienceTokenAuthentication, )
-    permission_classes = (IsAuthenticatedOrIsCreation, )
-    resource_name = 'clusters'
-    serializer_class = ClusterCreationParamsSerializer
-
-    
-    def get(self, request, *args, **kwargs):
-        """
-        Return a serialized ClusterCreationParams model with information
-        retrieved by kamaki calls. User with corresponding status will be
-        found by the escience token.
-        """
-        user_token = Token.objects.get(key=request.auth)
-        self.user = UserInfo.objects.get(user_id=user_token.user.user_id)
-        retrieved_cluster_info = project_list_flavor_quota(self.user)
-        serializer = self.serializer_class(retrieved_cluster_info, many=True)
-        return Response(serializer.data)
-
-class SessionView(GenericAPIView):
-    """
-    User login and logout and
-    user theme update
+    View to handle requests from ember for user metadata updates
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (IsAuthenticatedOrIsCreation, )
@@ -406,11 +348,12 @@ class SessionView(GenericAPIView):
         """
         user_token = Token.objects.get(key=request.auth)
         self.user = UserInfo.objects.get(user_id=user_token.user.user_id)
-        self.serializer_class = UserThemeSerializer
+        self.serializer_class = UserPutSerializer
         serializer = self.serializer_class(data=request.DATA)
         if serializer.is_valid():
-            if serializer.data['user_theme']:
-                self.user.user_theme = serializer.data['user_theme']
+            if serializer.data['user_theme'] or serializer.data['error_message']:
+                self.user.user_theme = serializer.data.get('user_theme','')
+                self.user.error_message = serializer.data.get('error_message','')
                 self.user.save()
             else:
                 db_logout_entry(self.user)
@@ -422,14 +365,14 @@ class SessionView(GenericAPIView):
             return Response(serializer.errors,
                             status=status.HTTP_400_BAD_REQUEST)
             
-class VreServerView(GenericAPIView):
+class VreServerView(APIView):
     """
-    Virtual Research Environment servers creation, deletion and info.
+    View to handle requests for Virtual Research Environment servers.
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (IsAuthenticated, )
     resource_name = 'vreserver'
-    model = VreServer
+    serializer_class = ClusterchoicesSerializer
     
     def get(self, request, *args, **kwargs):
         """
@@ -447,8 +390,7 @@ class VreServerView(GenericAPIView):
         """
         Handles requests with user's VRE server creation parameters.
         """
-        serializer_class = ClusterchoicesSerializer
-        serializer = serializer_class(data=request.DATA)
+        serializer = self.serializer_class(data=request.DATA)
         if serializer.is_valid():
             user_token = Token.objects.get(key=request.auth)
             user = UserInfo.objects.get(user_id=user_token.user.user_id)
@@ -482,14 +424,14 @@ class VreServerView(GenericAPIView):
         # correctly.
         return Response(serializer.errors)
     
-class DslView(GenericAPIView):
+class DslView(APIView):
     """
-    User DSL management.
+    View to handle requests for User DSL management.
     """
     authentication_classes = (EscienceTokenAuthentication, )
     permission_classes = (IsAuthenticated, )
     resource_name = 'dsl'
-    model = Dsl
+    serializer_class = DslsSerializer
     
     def post(self, request, *args, **kwargs):
         """
@@ -535,7 +477,6 @@ class DslView(GenericAPIView):
         """
         user_token = Token.objects.get(key=request.auth)
         self.user = UserInfo.objects.get(user_id=user_token.user.user_id)
-        serializer_class = DslsSerializer
         serializer = self.serializer_class(data=request.DATA, many=True)
         return Response(serializer.data)
     

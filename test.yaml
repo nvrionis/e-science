@@ -1,0 +1,32 @@
+cluster:
+    # cluster to be created
+    disk_template: drbd
+    flavor_master:
+    - 2
+    - 4096
+    - 20
+    flavor_slaves:
+    - 2
+    - 4096
+    - 20
+    image: Hadoop-2.5.2
+    name: 'test'
+    personality: /home/developer/.ssh/id_rsa.pub
+    project_name: escience.grnet.gr
+    size: 3
+configuration:
+    # configuration settings
+    dfs_blocksize: '128'
+    replication_factor: '2'
+actions:
+    # list of actions
+    - local_cmd (ls)
+    - node_add
+    - put (test.yaml,test4.yaml)
+    - run_job (hduser, "/usr/local/hadoop/bin/hadoop jar /usr/local/hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar pi 2 10000")
+    - get (test4.yaml,example.yaml)
+    - stop
+    - format
+    - start
+    - node_remove
+    - local_cmd (ls)
